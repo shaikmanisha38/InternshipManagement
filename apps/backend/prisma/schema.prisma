@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  githubId  String   @unique
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  role      String   @default("INTERN")
+  intern    Intern?
+}
+
+model Intern {
+  id           String             @id @default(uuid())
+  userId       String             @unique
+  user         User               @relation(fields: [userId], references: [id])
+  weekProgress WeekProgress[]
+  certificates Certificate[]
+  leaderboard  LeaderboardEntry?
+}
+
+model WeekProgress {
+  id        Int     @id @default(autoincrement())
+  internId  String
+  week      Int
+  unlocked  Boolean @default(false)
+  completed Boolean @default(false)
+  intern    Intern  @relation(fields: [internId], references: [id])
+}
+
+model LeaderboardEntry {
+  id       String @id @default(uuid())
+  internId String @unique
+  points   Int    @default(0)
+  intern   Intern @relation(fields: [internId], references: [id])
+}
+
+model Certificate {
+  id        String @id @default(uuid())
+  internId  String
+  week      Int
+  pdfUrl    String
+  hash      String
+  intern    Intern @relation(fields: [internId], references: [id])
+}

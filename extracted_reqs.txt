@@ -1,0 +1,118 @@
+PRODUCT REQUIREMENT DOCUMENT (PRD)
+Automated Internship Portal Specification
+Version 1.0 • July 2026 • Core Architectural Blueprint
+
+
+Executive Summary & Objective
+
+The Automated Internship Portal is a scalable, cloud-native SaaS infrastructure designed to automate the lifecycle of student internships. The portal eliminates manual intervention by program managers, utilizing automated project matching, real-time GitHub validation, and LLM-powered asynchronous code analysis to orchestrate an intensive 2-month training lifecycle.
+By mapping student inputs directly to industry pipelines, the system optimizes modern engineering pedagogy: forcing Git practices, testing paradigms, and structured deployment before awarding verifiable performance certificates.
+
+The 2-Month Program Roadmap
+
+The system enforces a strict, time-locked, and sequential curriculum spanning exactly 8 weeks. Each stage must be successfully completed through validated code benchmarks to grant progression.
+
+TIMELINE
+PHASE TARGET
+CORE CONTENT & SCOPE ELEMENTS
+Weeks 1–2
+Fundamentals Exploration
+Core system architecture, language specifics, environments, linting setups, baseline OOP/Functional principles, and initialization of development work environments.
+Weeks 3–4
+Mini Modules
+Component micro-architectures, database schemas integration, local API design, state handlers, and initial sandboxed unit implementations.
+Weeks 5–6
+Main Project Execution
+End-to-end service assembly, implementation of core features, database persistence setups, and functional deployment readiness.
+Week 7
+Advanced Features & Testing
+Integration testing, coverage reporting (minimum 80% threshold), performance profiling, stress execution, and security layer optimizations.
+Week 8
+Review, Presentation & Closure
+Comprehensive automated code sweep, project dashboard submission, live deck presentation assessment upload, performance weighting, and certificate emission.
+
+Core Platform Workflow
+
+The system execution relies on an automated, non-blocking asynchronous queue model following this sequential lifecycle [cite: 1]:
+
+Student Registration & Authentication: Student signs up through OAuth (GitHub mandated). System provisions internal profile data structures and parses GitHub metadata 
+Algorithmic Project Assignment: Based on chosen tracks or dynamic assessment flags, the portal provisions a private repository under the organization profile and assigns a tracking matrix. 
+Automated Daily Task Release: CRON schedulers release programmatic tasks every 24 hours to the intern’s dashboard matching their respective timeline track.
+Git Commit Validation Webhook: Intern pushes code. GitHub Webhooks trigger an API payload to the portal, parsing the payload commits, changed lines, and build checks.
+Asynchronous AI Code Quality Evaluation: An LLM orchestration layer reviews code formatting, architecture patterns, and anti-patterns against a structured JSON schema validation matrix.
+Dynamic Automated Progressive Unlocking: If AI evaluation meets criteria and Git validation passes, state hooks transition, unlocking the subsequent technical module instantly.
+Automated Weekly Assessment Metrics: Time-boxed diagnostic conceptual assessments trigger automatically at the conclusion of every 7-day computational period.
+Final Matrix Score Aggregation: The database engines query attendance, daily task compliance rates, code clean score parameters, and assessment metrics to produce a final normalized index grade.
+Cryptographic Certificate Emissions: An automated service renders a cryptographic signature over an elegant PDF certificate format, posting it to the public validation record ledger.
+
+Core Engineering Features
+
+Student Registration, Profiles & Authentication
+GitHub OAuth implementation ensuring secure tokenized scoped access to user-specified data repository creation metrics.
+Automated profiles containing technical stack preferences, university details, and dynamic performance indexes.
+
+Automated Project Allocation Infrastructure
+Template-driven repository instantiation via GitHub API upon onboarding execution. 
+Dynamic branching permission assignments locking main branches and restricting operational interactions to development branches.
+GitHub Integration Engine & Webhooks
+Validation of precise metrics: Commit naming standardization patterns, branch strategies, and code diff analysis.
+Blocking workflow logic prevention ensuring users cannot skip milestones without real codebase contributions.
+
+LLM-Based Code Evaluation System
+AI Evaluation Operational CriteriaEach commit triggers a background job processing structural evaluations: Syntactic efficiency, compliance with structural requirements, algorithmic complexity approximations, and structural vulnerabilities.AI Evaluation Operational CriteriaEach commit triggers a background job processing structural evaluations: Syntactic efficiency, compliance with structural requirements, algorithmic complexity approximations, and structural vulnerabilities.
+AI Evaluation Operational Criteria
+Each commit triggers a background job processing structural evaluations: Syntactic efficiency, compliance with structural requirements, algorithmic complexity approximations, and structural vulnerabilities.
+AI Evaluation Operational Criteria
+Each commit triggers a background job processing structural evaluations: Syntactic efficiency, compliance with structural requirements, algorithmic complexity approximations, and structural vulnerabilities.
+
+Gamification Architecture (Leaderboard & Achievements)
+Real-time redis-cached rank matrix counting accumulated points from execution speeds, code hygiene scores, and testing code-coverage ratios.
+Dynamic badge engine generating SVG vectors tied directly into user profiles for high performance metrics.
+
+Recommended Enterprise Technology Stack
+
+LAYER TYPE
+TECHNOLOGY RECOMMENDATION
+ARCHITECTURAL PURPOSE
+Frontend
+
+Next.js 14+React TailwindCSS
+Server-side rendering for analytics dashboard views and fully atomic design layout structures.
+Backend Service
+Node.js (NestJS)or
+
+Python (FastAPI)
+Asynchronous execution management, multi-threaded worker patterns, and highly performant JSON payloads.
+Database Architecture
+
+PostgreSQL
+
+Prisma / SQLAlchemy
+Relational transactional tracking ensuring extreme consistency across scoring and user progress matrices.
+Caching & Queuing
+
+RedisBullMQ
+Managing incoming GitHub high-velocity webhooks and staging jobs for scheduled AI analysis workflows.
+To support high concurrent execution threads, asynchronous analytical background workers, and persistent connections, the following stack is detailed [cite: 1]:
+
+Mandated Operational Pages Mapping
+
+The portal UI ecosystem requires distinct page layers engineered to handle multi-tenant operational visibility.
+Core Landing & Onboarding Canvas
+Marketing overview of the internship curriculum track layouts.
+One-click GitHub Authentication button initializing user pipeline structures.
+
+Dynamic Intern Development Command Center
+Unified timeline view visually unlocking modules from Week 1 through Week 8.
+Real-time streaming status tracker showing Git push validations, lint flags, and AI output recommendations.
+Dynamic Team Leaderboard & Badges Center
+Live sorting tables listing points, commit volumes, and streak indicators.
+Badge repository presenting unlocked micro-credentials with shareable deep-link properties.
+
+Mentor & Manager Dashboard
+Aggregate analytical insights showing active churn risks, stagnation lists, and completion distributions.
+Manual review bypass panel providing physical overrides for complex testing exceptions.
+
+Verified Cryptographic Certificate Vault
+Public facing validation route displaying generated completion credentials.
+LinkedIn single-click certification cross-posting parameters and PDF download hubs.
