@@ -14,13 +14,13 @@ export default function AboutPage() {
       {/* Hero Image Banner */}
       <div className="relative w-full h-[400px] md:h-[500px]">
         {/* Background Image */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')` }}
         />
         {/* Dark overlay for text legibility */}
         <div className="absolute inset-0 bg-black/60" />
-        
+
         {/* Banner Content */}
         <div className="relative z-10 max-w-7xl mx-auto px-6 h-full flex flex-col justify-center">
           <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4">About Us</h1>
@@ -30,7 +30,7 @@ export default function AboutPage() {
             <span className="text-white">About Us</span>
           </div>
         </div>
-        
+
         {/* Decorative bottom bar (mimicking the yellow bar in screenshot) */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-secondary" />
       </div>
@@ -93,14 +93,14 @@ export default function AboutPage() {
               Whether you are a student looking to level up or a company seeking exceptional interns, the platform is ready for you.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button 
+              <button
                 onClick={() => navigate('/signup?type=student')}
                 className="w-full sm:w-auto px-8 py-4 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
               >
                 Join as Student
                 <ChevronRight className="w-5 h-5" />
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/signup?type=employee')}
                 className="w-full sm:w-auto px-8 py-4 bg-white/10 text-white rounded-xl font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2 border border-white/10"
               >

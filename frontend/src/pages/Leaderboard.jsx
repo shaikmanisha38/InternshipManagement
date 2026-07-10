@@ -1,98 +1,170 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Medal, Zap, Award } from 'lucide-react';
+import React, { useState } from 'react';
+import { Card, Typography, Select, Table, Avatar, Tag, Space, Input, Button } from 'antd';
+import { 
+  TrophyFilled, 
+  CrownFilled,
+  UserOutlined,
+  SearchOutlined,
+  ReloadOutlined,
+  CodeFilled,
+  FireFilled,
+  CalendarFilled,
+  StarFilled,
+  RocketFilled
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
+const { Option } = Select;
+
+// Mock Leaderboard Data
+const leaderboardData = [
+  { key: '1', rank: 1, name: 'Alex Developer', points: 2840, tasks: '38 / 40 Tasks', isCurrentUser: false },
+  { key: '2', rank: 2, name: 'Samantha UI', points: 2750, tasks: '37 / 40 Tasks', isCurrentUser: false },
+  { key: '3', rank: 3, name: 'David Backend', points: 2610, tasks: '35 / 40 Tasks', isCurrentUser: false },
+  { key: '4', rank: 4, name: 'Michael Smith', points: 2450, tasks: '34 / 40 Tasks', isCurrentUser: false },
+  { key: '5', rank: 5, name: 'Jessica Chen', points: 2320, tasks: '31 / 40 Tasks', isCurrentUser: true },
+  { key: '6', rank: 6, name: 'Robert Johnson', points: 2180, tasks: '28 / 40 Tasks', isCurrentUser: false },
+  { key: '7', rank: 7, name: 'Emily Davis', points: 2150, tasks: '28 / 40 Tasks', isCurrentUser: false },
+  { key: '8', rank: 8, name: 'William Brown', points: 1980, tasks: '25 / 40 Tasks', isCurrentUser: false },
+  { key: '9', rank: 9, name: 'Olivia Taylor', points: 1850, tasks: '22 / 40 Tasks', isCurrentUser: false },
+  { key: '10', rank: 10, name: 'James Wilson', points: 1720, tasks: '20 / 40 Tasks', isCurrentUser: false },
+];
 
 export default function Leaderboard() {
-  const users = [
-    { rank: 1, name: 'Alice Chen', points: 14500, streak: 12, commits: 145 },
-    { rank: 2, name: 'Bob Smith', points: 13200, streak: 8, commits: 120 },
-    { rank: 3, name: 'Charlie Davis', points: 12850, streak: 15, commits: 110 },
-    { rank: 4, name: 'Diana Ross', points: 11900, streak: 5, commits: 95 },
-    { rank: 5, name: 'Eve Martinez', points: 10400, streak: 3, commits: 80 },
+  const [searchText, setSearchText] = useState('');
+
+  // Render Rank Icon
+  const renderRank = (rank) => {
+    if (rank === 1) return <div className="w-9 h-9 rounded-full bg-yellow-100 flex items-center justify-center border border-yellow-300 shadow-sm"><CrownFilled className="text-yellow-500 text-xl" /></div>;
+    if (rank === 2) return <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center border border-slate-300 shadow-sm"><TrophyFilled className="text-slate-400 text-xl" /></div>;
+    if (rank === 3) return <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center border border-orange-300 shadow-sm"><TrophyFilled className="text-orange-600 text-xl" /></div>;
+    return <Text className="text-slate-500 font-bold text-lg ml-3">{rank}</Text>;
+  };
+
+  // Render Mini Badges in Table
+  const renderMiniBadges = (rank) => {
+    return (
+      <div className="flex gap-1.5">
+        <div className="w-6 h-6 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center shadow-sm"><CodeFilled className="text-blue-500 text-[11px]" /></div>
+        <div className="w-6 h-6 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center shadow-sm"><FireFilled className="text-orange-500 text-[11px]" /></div>
+        {rank <= 3 && <div className="w-6 h-6 rounded-full bg-yellow-50 border border-yellow-100 flex items-center justify-center shadow-sm"><StarFilled className="text-yellow-500 text-[11px]" /></div>}
+        {rank === 1 && <div className="w-6 h-6 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center shadow-sm"><RocketFilled className="text-purple-500 text-[11px]" /></div>}
+        <div className="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-sm"><CalendarFilled className="text-emerald-500 text-[11px]" /></div>
+      </div>
+    );
+  };
+
+  // Table Columns
+  const columns = [
+    {
+      title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest ml-1">Rank</Text>,
+      dataIndex: 'rank',
+      key: 'rank',
+      width: 100,
+      render: (rank) => renderRank(rank),
+    },
+    {
+      title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest">Student</Text>,
+      dataIndex: 'name',
+      key: 'name',
+      render: (text, record) => (
+        <div className="flex items-center gap-3">
+          <Avatar size="large" icon={<UserOutlined />} className={`${record.isCurrentUser ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'} shadow-sm`} />
+          <Text className={`font-bold text-base ${record.isCurrentUser ? 'text-blue-900' : 'text-slate-900'}`}>{text}</Text>
+          {record.isCurrentUser && <Tag color="blue" className="ml-2 border-blue-300 font-bold">You</Tag>}
+        </div>
+      ),
+    },
+    {
+      title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest">Points</Text>,
+      dataIndex: 'points',
+      key: 'points',
+      render: (points, record) => <Text className={`${record.isCurrentUser ? 'text-blue-700' : 'text-slate-800'} font-black text-lg`}>{points.toLocaleString()} pts</Text>,
+    },
+    {
+      title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest">Badges Earned</Text>,
+      key: 'badges',
+      render: (_, record) => renderMiniBadges(record.rank),
+    },
+    {
+      title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest">Completed Tasks</Text>,
+      dataIndex: 'tasks',
+      key: 'tasks',
+      render: (tasks, record) => <Text className={`${record.isCurrentUser ? 'text-blue-800' : 'text-slate-600'} font-bold`}>{tasks}</Text>,
+    },
   ];
 
   return (
-    <div className="space-y-8 pb-10">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight mb-2">Team Leaderboard</h1>
-          <p className="text-textMuted">Real-time ranking based on Daily Task XP across the 8-Week Roadmap.</p>
-        </div>
-        <div className="bg-primary/20 text-primary px-4 py-2 rounded-xl border border-primary/30 flex items-center gap-2 font-bold shadow-lg shadow-primary/10">
-          <Trophy className="w-5 h-5" />
-          Your Rank: #14
-        </div>
+    <div className="p-4 md:p-8 space-y-6 bg-blue-50/50 min-h-full">
+      <div className="mb-6">
+        <Title level={2} className="!text-slate-900 !mb-2">Global Leaderboard</Title>
+        <Text className="text-slate-700 font-medium text-base">Check your standing, compare scores, and compete with your peers.</Text>
       </div>
 
-      {/* Top 3 Podium (Visual placeholder) */}
-      <div className="flex justify-center items-end h-48 gap-4 mt-12 mb-8">
-        <motion.div initial={{y: 50, opacity: 0}} animate={{y: 0, opacity: 1}} transition={{delay: 0.2}} className="w-32 bg-slate-800/50 rounded-t-2xl border-t-4 border-slate-400 p-4 text-center h-32 flex flex-col justify-end">
-          <div className="text-slate-400 font-bold mb-2">#2 Bob</div>
-        </motion.div>
-        <motion.div initial={{y: 50, opacity: 0}} animate={{y: 0, opacity: 1}} className="w-32 bg-yellow-900/30 rounded-t-2xl border-t-4 border-yellow-500 p-4 text-center h-40 flex flex-col justify-end relative shadow-[0_0_30px_rgba(234,179,8,0.2)]">
-          <Medal className="w-10 h-10 text-yellow-500 absolute -top-12 left-1/2 -translate-x-1/2" />
-          <div className="text-yellow-500 font-bold mb-2">#1 Alice</div>
-        </motion.div>
-        <motion.div initial={{y: 50, opacity: 0}} animate={{y: 0, opacity: 1}} transition={{delay: 0.3}} className="w-32 bg-amber-900/30 rounded-t-2xl border-t-4 border-amber-700 p-4 text-center h-28 flex flex-col justify-end">
-          <div className="text-amber-600 font-bold mb-2">#3 Charlie</div>
-        </motion.div>
-      </div>
+      <div className="max-w-7xl mx-auto">
+        <Card 
+          className="rounded-2xl border-slate-200 shadow-sm shadow-blue-900/5 bg-white overflow-hidden" 
+          bodyStyle={{ padding: 0 }}
+        >
+          {/* GLOBAL FILTER CONTAINER */}
+          <div className="p-5 md:p-6 border-b border-slate-100 bg-slate-50/50">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              
+              {/* Dropdown Filters */}
+              <Space wrap size="middle">
+                <Select defaultValue="all" className="w-40 [&>.ant-select-selector]:rounded-lg [&>.ant-select-selector]:border-slate-200 font-bold text-slate-700 shadow-sm">
+                  <Option value="all">All Colleges</Option>
+                  <Option value="mit">MIT</Option>
+                  <Option value="stanford">Stanford</Option>
+                  <Option value="harvard">Harvard</Option>
+                </Select>
+                <Select defaultValue="all" className="w-40 [&>.ant-select-selector]:rounded-lg [&>.ant-select-selector]:border-slate-200 font-bold text-slate-700 shadow-sm">
+                  <Option value="all">All Departments</Option>
+                  <Option value="cs">Computer Science</Option>
+                  <Option value="ee">Electrical Eng</Option>
+                  <Option value="ds">Data Science</Option>
+                </Select>
+                <Select defaultValue="2025" className="w-32 [&>.ant-select-selector]:rounded-lg [&>.ant-select-selector]:border-slate-200 font-bold text-slate-700 shadow-sm">
+                  <Option value="2025">Batch 2025</Option>
+                  <Option value="2026">Batch 2026</Option>
+                </Select>
+              </Space>
 
-      <div className="glass rounded-3xl overflow-hidden border border-borderCustom">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-white/5 border-b border-borderCustom">
-              <th className="p-4 font-bold text-textMuted uppercase text-xs tracking-wider">Rank</th>
-              <th className="p-4 font-bold text-textMuted uppercase text-xs tracking-wider">Intern</th>
-              <th className="p-4 font-bold text-textMuted uppercase text-xs tracking-wider text-right">Points</th>
-              <th className="p-4 font-bold text-textMuted uppercase text-xs tracking-wider text-right">Commits</th>
-              <th className="p-4 font-bold text-textMuted uppercase text-xs tracking-wider text-right">Streak</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user, idx) => (
-              <tr key={idx} className="border-b border-borderCustom/50 hover:bg-white/[0.02] transition-colors">
-                <td className="p-4 font-bold text-lg">
-                  {user.rank === 1 ? <span className="text-yellow-500">#1</span> : 
-                   user.rank === 2 ? <span className="text-slate-400">#2</span> : 
-                   user.rank === 3 ? <span className="text-amber-600">#3</span> : 
-                   `#${user.rank}`}
-                </td>
-                <td className="p-4 font-semibold flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-bg flex items-center justify-center text-xs text-white">
-                    {user.name.charAt(0)}
-                  </div>
-                  {user.name}
-                </td>
-                <td className="p-4 text-right font-bold text-secondary font-mono">{user.points.toLocaleString()}</td>
-                <td className="p-4 text-right font-medium text-textMuted">{user.commits}</td>
-                <td className="p-4 text-right">
-                  <div className="inline-flex items-center gap-1 bg-orange-500/10 text-orange-500 px-2 py-1 rounded-lg text-sm font-bold">
-                    <Zap className="w-4 h-4" />
-                    {user.streak}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Badges Section */}
-      <h2 className="text-2xl font-bold mt-12 mb-6">Badge Repository</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { name: 'First Push', desc: 'Valid push to main branch', color: 'text-primary border-primary/30 bg-primary/10' },
-          { name: 'Bug Squasher', desc: 'Fixed 5 AI lint errors', color: 'text-secondary border-secondary/30 bg-secondary/10' },
-          { name: 'Streak King', desc: '10 day commit streak', color: 'text-orange-500 border-orange-500/30 bg-orange-500/10' },
-          { name: 'Test Master', desc: '80% coverage reached', color: 'text-accent border-accent/30 bg-accent/10', locked: true },
-        ].map((badge, i) => (
-          <div key={i} className={`p-6 rounded-2xl border text-center ${badge.locked ? 'bg-white/5 border-borderCustom opacity-50 grayscale' : badge.color}`}>
-            <Award className="w-12 h-12 mx-auto mb-4" />
-            <h3 className="font-bold mb-1">{badge.name}</h3>
-            <p className="text-xs opacity-80">{badge.desc}</p>
+              {/* Search & Reset */}
+              <Space size="middle" className="w-full md:w-auto">
+                <Input 
+                  placeholder="Search students..." 
+                  prefix={<SearchOutlined className="text-slate-400" />} 
+                  value={searchText}
+                  onChange={e => setSearchText(e.target.value)}
+                  className="w-full md:w-64 rounded-lg border-slate-200 shadow-sm font-medium"
+                />
+                <Button 
+                  icon={<ReloadOutlined />} 
+                  onClick={() => setSearchText('')}
+                  className="rounded-lg border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 font-bold shadow-sm"
+                >
+                  Reset
+                </Button>
+              </Space>
+            </div>
           </div>
-        ))}
+
+          {/* COMPETITIVE RANKING TABLE */}
+          <div className="overflow-x-auto">
+            <Table 
+              columns={columns} 
+              dataSource={leaderboardData} 
+              pagination={{ pageSize: 8 }}
+              rowClassName={(record) => 
+                record.isCurrentUser 
+                  ? 'bg-blue-50/90 border-l-4 border-l-blue-500 shadow-[inset_0_0_12px_rgba(59,130,246,0.1)]' 
+                  : 'hover:bg-slate-50/50 transition-colors duration-200'
+              }
+              className="[&_.ant-table-thead_th]:bg-white [&_.ant-table-thead_th]:border-b-2 [&_.ant-table-thead_th]:border-slate-100 [&_.ant-table-thead_th]:py-4 [&_.ant-table-tbody_td]:border-b [&_.ant-table-tbody_td]:border-slate-100 [&_.ant-table-tbody_td]:py-5 [&_.ant-pagination]:px-6 [&_.ant-pagination]:pb-6 [&_.ant-pagination]:pt-4"
+            />
+          </div>
+        </Card>
       </div>
     </div>
   );

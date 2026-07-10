@@ -10,8 +10,14 @@ export default function LoginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Bypass authentication for now, route directly to dashboard
-    navigate('/dashboard');
+    // Route based on user type
+    if (userType === 'student') {
+      navigate('/dashboard');
+    } else if (userType === 'employee') {
+      navigate('/mentor');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   return (
