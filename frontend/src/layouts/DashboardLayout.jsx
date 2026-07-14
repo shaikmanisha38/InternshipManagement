@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, User, FileText, ClipboardList,
@@ -13,6 +13,20 @@ import {
 export default function DashboardLayout({ role = 'student' }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setUser(JSON.parse(userStr));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   const getNavItems = () => {
     switch (role) {
@@ -91,9 +105,9 @@ export default function DashboardLayout({ role = 'student' }) {
         {/* User Info Section */}
         <div className="p-6 bg-primary/10 border-b border-borderCustom/50">
           <p className="text-xs text-textMuted uppercase tracking-wider font-bold mb-1">Welcome</p>
-          <p className="text-white font-semibold mb-2">MANISHA</p>
+          <p className="text-white font-semibold mb-2">{user?.name || 'Loading...'}</p>
           <p className="text-xs text-textMuted uppercase tracking-wider font-bold mb-1">Email</p>
-          <p className="text-white/80 text-sm truncate">manishashaik38@gmail.com</p>
+          <p className="text-white/80 text-sm truncate">{user?.email || 'Loading...'}</p>
         </div>
 
         {/* Navigation Links */}
@@ -135,7 +149,7 @@ export default function DashboardLayout({ role = 'student' }) {
             Go to Main Page
           </button>
           <button
-            onClick={() => navigate('/login')}
+            onClick={handleLogout}
             className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all text-sm font-medium"
           >
             <LogOut className="w-5 h-5" />

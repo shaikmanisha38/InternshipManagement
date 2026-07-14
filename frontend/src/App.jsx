@@ -31,6 +31,7 @@ import MentorAssessments from './pages/MentorAssessments'
 import MentorLeaderboard from './pages/MentorLeaderboard'
 import MentorCertificates from './pages/MentorCertificates'
 import MentorReports from './pages/MentorReports'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
@@ -42,9 +43,14 @@ function App() {
         <Route path="/pricing" element={<PlaceholderPage title="Pricing" />} />
         <Route path="/register" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
 
         {/* Intern Dashboard Routes */}
-        <Route path="/dashboard" element={<DashboardLayout role="student" />}>
+        <Route path="/dashboard" element={
+          <ProtectedRoute allowedRoles={['STUDENT']}>
+            <DashboardLayout role="student" />
+          </ProtectedRoute>
+        }>
           <Route index element={<DashboardHome />} />
           <Route path="internship" element={<MyInternship />} />
           <Route path="task" element={<TodaysTask />} />
@@ -63,7 +69,11 @@ function App() {
         </Route>
 
         {/* Mentor Routes */}
-        <Route path="/mentor" element={<DashboardLayout role="mentor" />}>
+        <Route path="/mentor" element={
+          <ProtectedRoute allowedRoles={['MENTOR']}>
+            <DashboardLayout role="mentor" />
+          </ProtectedRoute>
+        }>
           <Route index element={<MentorOverview />} />
           <Route path="students" element={<MentorStudents />} />
           <Route path="projects" element={<MentorProjects />} />
@@ -76,7 +86,11 @@ function App() {
         </Route>
 
         {/* Admin Routes */}
-        <Route path="/admin" element={<DashboardLayout role="admin" />}>
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <DashboardLayout role="admin" />
+          </ProtectedRoute>
+        }>
           <Route index element={<AdminDashboard />} />
           <Route path="students" element={<PlaceholderPage title="Students" />} />
           <Route path="mentors" element={<PlaceholderPage title="Mentors" />} />

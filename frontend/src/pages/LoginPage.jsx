@@ -1,22 +1,54 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Briefcase, GraduationCap } from 'lucide-react';
+import { Mail, Lock, Briefcase, GraduationCap, ShieldAlert } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [userType, setUserType] = useState('student');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Route based on user type
-    if (userType === 'student') {
-      navigate('/dashboard');
-    } else if (userType === 'employee') {
-      navigate('/mentor');
-    } else {
-      navigate('/dashboard');
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:3000/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Save token and user details to localStorage
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Navigate based on actual role from database
+      const role = data.user.role;
+      if (role === 'STUDENT') {
+        navigate('/dashboard');
+      } else if (role === 'MENTOR') {
+        navigate('/mentor');
+      } else if (role === 'ADMIN') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,6 +70,13 @@ export default function LoginPage() {
           <h2 className="text-3xl font-extrabold mb-2 text-white">Welcome Back</h2>
           <p className="text-textMuted">Log in to your account.</p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-400 text-sm">
+            <ShieldAlert className="w-5 h-5 shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* User Type Toggle */}
@@ -70,6 +109,8 @@ export default function LoginPage() {
               <input 
                 type="email" 
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email Address" 
                 className="w-full bg-black/20 border border-borderCustom rounded-xl py-3 pl-12 pr-4 text-white placeholder-textMuted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               />
@@ -80,6 +121,8 @@ export default function LoginPage() {
               <input 
                 type="password" 
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password" 
                 className="w-full bg-black/20 border border-borderCustom rounded-xl py-3 pl-12 pr-4 text-white placeholder-textMuted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               />
@@ -94,9 +137,10 @@ export default function LoginPage() {
 
           <button 
             type="submit" 
-            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-primary/30"
+            disabled={loading}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-50"
           >
-            Log In
+            {loading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
 

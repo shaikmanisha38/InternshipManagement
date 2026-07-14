@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, Mail, Lock, Briefcase, GraduationCap } from 'lucide-react';
+import { User, Mail, Lock, Briefcase, GraduationCap, ShieldAlert } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [userType, setUserType] = useState('student');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -16,10 +21,36 @@ export default function SignupPage() {
     }
   }, [location]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Bypass authentication for now, route directly to dashboard
-    navigate('/dashboard');
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:3000/api/v1/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          name, 
+          email, 
+          password, 
+          role: userType === 'employee' ? 'MENTOR' : 'STUDENT'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Signup failed');
+      }
+
+      // Success! Redirect to login
+      navigate('/login');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,6 +71,13 @@ export default function SignupPage() {
           <h2 className="text-3xl font-extrabold mb-2 text-white">Create an Account</h2>
           <p className="text-textMuted">Join our platform today.</p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-400 text-sm">
+            <ShieldAlert className="w-5 h-5 shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* User Type Toggle */}
@@ -72,6 +110,8 @@ export default function SignupPage() {
               <input 
                 type="text" 
                 required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Full Name" 
                 className="w-full bg-black/20 border border-borderCustom rounded-xl py-3 pl-12 pr-4 text-white placeholder-textMuted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               />
@@ -82,6 +122,8 @@ export default function SignupPage() {
               <input 
                 type="email" 
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email Address" 
                 className="w-full bg-black/20 border border-borderCustom rounded-xl py-3 pl-12 pr-4 text-white placeholder-textMuted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               />
@@ -92,6 +134,8 @@ export default function SignupPage() {
               <input 
                 type="password" 
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password" 
                 className="w-full bg-black/20 border border-borderCustom rounded-xl py-3 pl-12 pr-4 text-white placeholder-textMuted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               />
@@ -100,9 +144,10 @@ export default function SignupPage() {
 
           <button 
             type="submit" 
-            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-primary/30 mt-6"
+            disabled={loading}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-primary/30 mt-6 disabled:opacity-50"
           >
-            Sign Up
+            {loading ? 'Signing Up...' : 'Sign Up'}
           </button>
         </form>
 
