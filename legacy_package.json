@@ -1,0 +1,7 @@
+{
+  "name": "internship-portal",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ]
+}

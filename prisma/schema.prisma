@@ -1,0 +1,366 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  STUDENT
+  MENTOR
+  ADMIN
+}
+
+enum InternshipStatus {
+  ONGOING
+  COMPLETED
+  DROPPED
+}
+
+enum InternshipPostingStatus {
+  OPEN
+  FILLED
+  CLOSED
+}
+
+enum ResourceType {
+  PDF
+  VIDEO
+  GITHUB
+  DOC
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum QuestionType {
+  MCQ
+  CODING
+}
+
+model Role {
+  id       String   @id @default(uuid())
+  roleName RoleName @unique
+  users    User[]
+
+  @@map("roles")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  password     String
+  roleId       String
+  phone        String?
+  college      String?
+  department   String?
+  year         Int?
+  profileImage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  role         Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  
+  mentoredInternships Internship[] @relation("MentorInternships")
+  
+  studentInternships  StudentInternship[]
+  taskSubmissions     TaskSubmission[]
+  githubAccounts      GithubAccount[]
+  assessmentSubmissions AssessmentSubmission[]
+  attendance          Attendance[]
+  certificates        Certificate[]
+  studentBadges       StudentBadge[]
+  leaderboard         Leaderboard?
+  notifications       Notification[]
+  activityLogs        ActivityLog[]
+
+  @@map("users")
+}
+
+model Internship {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  duration    String
+  technology  String
+  difficulty  String
+  mentorId    String?
+
+  companyName String?  @map("company_name")
+  techStack   String[] @map("tech_stack")
+  maxCapacity Int      @default(10) @map("max_capacity")
+  status      InternshipPostingStatus @default(OPEN)
+
+  createdAt   DateTime @default(now())
+
+  mentor             User?               @relation("MentorInternships", fields: [mentorId], references: [id], onDelete: Cascade)
+  studentInternships StudentInternship[]
+  roadmaps           Roadmap[]
+
+  @@map("internships")
+}
+
+model StudentInternship {
+  id           String   @id @default(uuid())
+  studentId    String
+  internshipId String
+  startDate    DateTime
+  endDate      DateTime?
+  currentWeek  Int      @default(1)
+  currentDay   Int      @default(1)
+  progress     Float    @default(0.0)
+  status       InternshipStatus @default(ONGOING)
+
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  internship   Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+
+  @@map("student_internships")
+}
+
+model Roadmap {
+  id           String   @id @default(uuid())
+  internshipId String
+  weekNumber   Int
+  title        String
+  description  String?
+
+  internship   Internship   @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  roadmapDays  RoadmapDay[]
+
+  @@map("roadmaps")
+}
+
+model RoadmapDay {
+  id            String   @id @default(uuid())
+  roadmapId     String
+  dayNumber     Int
+  title         String
+  topicsCovered String[] @default([]) @map("topics_covered")
+
+  roadmap       Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  tasks         Task[]
+
+  @@index([roadmapId, dayNumber])
+  @@map("roadmap_days")
+}
+
+model Task {
+  id            String   @id @default(uuid())
+  roadmapDayId  String
+  title         String
+  description   String
+  difficulty    String
+  estimatedTime String?
+  unlockOrder   Int      @default(0)
+  passingScore  Float?
+
+  roadmapDay    RoadmapDay       @relation(fields: [roadmapDayId], references: [id], onDelete: Cascade)
+  resources     TaskResource[]
+  submissions   TaskSubmission[]
+
+  @@map("tasks")
+}
+
+model TaskResource {
+  id      String       @id @default(uuid())
+  taskId  String
+  title   String
+  type    ResourceType
+  url     String
+
+  task    Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("task_resources")
+}
+
+model TaskSubmission {
+  id            String           @id @default(uuid())
+  studentId     String
+  taskId        String
+  repositoryUrl String?
+  branch        String?
+  commitHash    String?
+  submittedAt   DateTime         @default(now())
+  status        SubmissionStatus @default(PENDING)
+
+  student       User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  task          Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  githubCommits GithubCommit[]
+  aiEvaluation  AIEvaluation?
+
+  @@map("task_submissions")
+}
+
+model GithubAccount {
+  id          String   @id @default(uuid())
+  studentId   String
+  githubId    String   @unique
+  username    String
+  accessToken String?
+  repository  String?
+
+  student     User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("github_accounts")
+}
+
+model GithubCommit {
+  id           String   @id @default(uuid())
+  submissionId String
+  commitHash   String
+  message      String
+  branch       String?
+  commitTime   DateTime
+
+  submission   TaskSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("github_commits")
+}
+
+model AIEvaluation {
+  id            String   @id @default(uuid())
+  submissionId  String   @unique
+  score         Float
+  codeQuality   Float?
+  readability   Float?
+  documentation Float?
+  feedback      String?
+  strengths     String?
+  weaknesses    String?
+  createdAt     DateTime @default(now())
+
+  submission    TaskSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("ai_evaluations")
+}
+
+model Assessment {
+  id           String   @id @default(uuid())
+  week         Int
+  title        String
+  description  String?
+  passingMarks Float
+
+  questions    AssessmentQuestion[]
+  submissions  AssessmentSubmission[]
+
+  @@map("assessments")
+}
+
+model AssessmentQuestion {
+  id           String       @id @default(uuid())
+  assessmentId String
+  question     String
+  type         QuestionType
+  options      Json?
+  answer       String
+
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_questions")
+}
+
+model AssessmentSubmission {
+  id           String   @id @default(uuid())
+  assessmentId String
+  studentId    String
+  score        Float
+  submittedAt  DateTime @default(now())
+
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_submissions")
+}
+
+model Attendance {
+  id         String   @id @default(uuid())
+  studentId  String
+  loginTime  DateTime
+  logoutTime DateTime?
+  hoursSpent Float?
+  date       DateTime @db.Date
+
+  student    User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("attendance")
+}
+
+model Certificate {
+  id                String   @id @default(uuid())
+  studentId         String   @unique
+  certificateNumber String   @unique
+  certificateUrl    String
+  issuedDate        DateTime @default(now())
+  finalScore        Float
+
+  student           User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("certificates")
+}
+
+model Badge {
+  id          String   @id @default(uuid())
+  badgeName   String   @unique
+  description String?
+  points      Int      @default(0)
+
+  studentBadges StudentBadge[]
+
+  @@map("badges")
+}
+
+model StudentBadge {
+  id        String   @id @default(uuid())
+  studentId String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+
+  student   User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  badge     Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@map("student_badges")
+}
+
+model Leaderboard {
+  id        String   @id @default(uuid())
+  studentId String   @unique
+  points    Int      @default(0)
+  rank      Int?
+  updatedAt DateTime @updatedAt
+
+  student   User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("leaderboard")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  activity  String
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
