@@ -1,111 +1,237 @@
 "use client";
-import React, { useState } from 'react';
-import { Card, Typography, Tag, Tabs, Button, Checkbox, Row, Col, Space, Divider, Avatar } from 'antd';
-import {
-  ClockCircleOutlined,
-  ExclamationCircleOutlined,
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Tabs, Tag, Space, Checkbox, Divider, Avatar, Button, Spin, Alert, message, Modal, Row, Col } from 'antd';
+import { 
+  ExclamationCircleOutlined, 
+  ClockCircleOutlined, 
+  FilePdfOutlined, 
+  PlaySquareOutlined,
   GithubOutlined,
-  CodeOutlined,
+  LinkOutlined,
   UploadOutlined,
   RobotOutlined,
-  FilePdfOutlined,
-  PlaySquareOutlined,
-  LinkOutlined
+  CodeOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 
 const { Title, Text, Paragraph } = Typography;
 
 export default function TodaysTask() {
   const [checklist, setChecklist] = useState({
-    read: true,
-    clone: false,
-    complete: false,
-    commit: false,
-    push: false,
-    submit: false
+    read: false, clone: false, complete: false, commit: false, push: false, submit: false
   });
+  const [loading, setLoading] = useState(true);
+  const [taskData, setTaskData] = useState(null);
+  const [submission, setSubmission] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [isAiModalVisible, setIsAiModalVisible] = useState(false);
+  
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchTaskData();
+  }, []);
+
+  const fetchTaskData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      // 1. Fetch current task
+      const res = await fetch('http://localhost:3000/api/v1/tasks/today', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch today\'s task.');
+      }
+
+      const tasksArray = await res.json();
+      if (!tasksArray || tasksArray.length === 0) {
+        throw new Error('No task available for today.');
+      }
+      const data = tasksArray[0];
+      setTaskData(data);
+
+      // 2. Fetch latest submission for this task
+      if (data && data.id) {
+        fetchLatestSubmission(data.id, token);
+      }
+
+    } catch (err) {
+      message.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLatestSubmission = async (taskId, token) => {
+    try {
+      const subRes = await fetch(`http://localhost:3000/api/v1/submissions/task/${taskId}/latest`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (subRes.ok) {
+        const subData = await subRes.json();
+        setSubmission(subData);
+        if (subData) {
+          // If already submitted, update checklist automatically
+          setChecklist(prev => ({ ...prev, submit: true }));
+        }
+      }
+    } catch (err) {
+      console.log('No previous submission found or error fetching it');
+    }
+  };
 
   const handleCheck = (key) => {
     setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleSubmitTask = async () => {
+    if (!taskData) return;
+    
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3000/api/v1/submissions', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          taskId: taskData.id,
+          repositoryUrl: taskData.repositoryUrl,
+          branch: 'main',
+          commitHash: `mock-${Date.now()}` // Mocking for now as per plan
+        })
+      });
+
+      if (!res.ok) throw new Error('Submission failed');
+      
+      const newSub = await res.json();
+      setSubmission(newSub);
+      setChecklist(prev => ({ ...prev, submit: true }));
+      message.success('Task submitted successfully! AI is evaluating it.');
+      
+      // AI mock pipeline takes 3 seconds on backend, let's auto-refresh submission after 4 seconds
+      setTimeout(() => fetchLatestSubmission(taskData.id, token), 4000);
+
+    } catch (err) {
+      message.error(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOpenVSCode = () => {
+    if (taskData?.repositoryUrl) {
+      // Use VS Code protocol handler to clone the repository directly
+      window.location.href = `vscode://vscode.git/clone?url=${taskData.repositoryUrl}`;
+    } else {
+      message.warning('Repository URL not available');
+    }
+  };
+
+  const handleViewRepository = () => {
+    if (taskData?.repositoryUrl) {
+      window.open(taskData.repositoryUrl, '_blank');
+    } else {
+      message.warning('Repository URL not available');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[600px]">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!taskData) {
+    return (
+      <div className="p-8">
+        <Alert message="No Task Available" description="There is no task assigned for today." type="info" showIcon />
+      </div>
+    );
+  }
+
   const contentTabs = [
     {
       key: '1',
-      label: <Text className="font-semibold text-slate-800">Objectives & Requirements</Text>,
+      label: 'Problem Statement',
       children: (
-        <div className="space-y-4 pt-2">
-          <Paragraph className="text-slate-600 text-base leading-relaxed font-medium">
-            Your primary objective today is to build a robust Login API using Node.js, Express, and JSON Web Tokens (JWT). You will establish a secure authentication route that validates user credentials against a MongoDB database and issues an access token upon successful verification.
+        <div className="prose prose-slate max-w-none">
+          <Paragraph className="text-slate-700 text-base leading-relaxed">
+            {taskData.description}
           </Paragraph>
-
-          <Title level={5} className="!text-slate-900 !mb-2">Key Requirements:</Title>
-          <ul className="list-disc pl-5 space-y-2 text-slate-600 font-medium">
-            <li>Create a <code className="bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-100">POST /api/auth/login</code> endpoint.</li>
-            <li>Accept <code className="bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-100">email</code> and <code className="bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-100">password</code> in the request body.</li>
-            <li>Validate the email exists in the database.</li>
-            <li>Compare the hashed password securely using bcrypt.</li>
-            <li>Generate a JWT payload containing the user ID and role, signed with a secure secret.</li>
-            <li>Return the token and basic user info (excluding password).</li>
+          <Title level={4} className="!text-slate-900 !mt-6 !mb-3">Requirements</Title>
+          <ul className="space-y-2 text-slate-700">
+            <li>Ensure you follow standard coding practices.</li>
+            <li>Submit your code via the GitHub repository linked below.</li>
+            <li>Make sure all automated tests pass before submitting.</li>
           </ul>
         </div>
       ),
     },
     {
       key: '2',
-      label: <Text className="font-semibold text-slate-800">Expected Output</Text>,
+      label: 'Starter Code',
       children: (
-        <div className="space-y-4 pt-2">
-          <Paragraph className="text-slate-600 font-medium">
-            Upon successful login, your API should respond with a <code className="bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-100">200 OK</code> status code and the following JSON structure:
-          </Paragraph>
-          <div className="bg-slate-900 rounded-xl p-5 overflow-x-auto shadow-inner border border-slate-800">
-            <pre className="text-blue-300 font-mono text-sm m-0">
-              {`{
-  "success": true,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": "60d5ecb8b392d700153f3a1f",
-      "email": "student@example.com",
-      "role": "student"
-    }
-  }
-}`}
-            </pre>
-          </div>
+        <div className="bg-slate-900 rounded-xl p-4 overflow-hidden">
+          <pre className="text-slate-300 font-mono text-sm m-0">
+            <code>
+{`// Starter template
+function solveTask() {
+  // Your code here
+}
+
+module.exports = solveTask;`}
+            </code>
+          </pre>
         </div>
       ),
     },
   ];
 
+  const hasSubmission = !!submission;
+  const isApproved = submission?.status === 'APPROVED';
+  const hasFeedback = !!submission?.aiEvaluation;
+
   return (
-    <div className="p-4 md:p-8 space-y-6 bg-slate-50 min-h-full">
+    <div className="p-4 md:p-8 space-y-8 bg-slate-50 min-h-full">
       <Row gutter={[32, 32]}>
-
-        {/* LEFT COLUMN (Documentation & Content) */}
+        {/* LEFT COLUMN */}
         <Col xs={24} lg={16} className="space-y-6">
-
-          {/* Task Header Banner */}
-          <Card className="rounded-2xl border-0 shadow-sm bg-slate-900"  styles={{ body: { padding: '32px' } }}>
-            <div className="flex flex-col gap-4">
-              <div>
-                <Text className="text-blue-300 uppercase text-xs font-bold tracking-wider block mb-2">Today's Task • Day 18</Text>
-                <Title level={2} className="!text-white !mb-4 !mt-0">Build Login API (JWT Authentication)</Title>
+          {/* Header Card */}
+          <Card 
+            className="rounded-2xl border-0 shadow-md bg-gradient-to-br from-slate-900 to-blue-900 overflow-hidden relative"
+            styles={{ body: { padding: '40px' } }}
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full blur-[100px] opacity-20 -mr-20 -mt-20 pointer-events-none"></div>
+            
+            <div className="relative z-10">
+              <div className="mb-6">
+                <Text className="text-blue-300 uppercase text-xs font-bold tracking-wider block mb-2">
+                  Today's Task • Day {taskData.currentDay}
+                </Text>
+                <Title level={2} className="!text-white !mb-4 !mt-0">{taskData.title}</Title>
                 <Paragraph className="text-white/90 text-base leading-relaxed max-w-3xl font-medium m-0">
-                  Implement secure stateless authentication by issuing JSON Web Tokens. Ensure standard security practices like bcrypt hashing and hiding sensitive data in responses.
+                  {taskData.description}
                 </Paragraph>
               </div>
 
               <Space size={[12, 12]} wrap className="mt-4 pt-4 border-t border-white/10">
                 <Tag className="px-3 py-1.5 text-sm rounded-md border-amber-500/30 bg-amber-500/20 text-amber-300 font-bold m-0 flex items-center gap-1.5">
-                  <ExclamationCircleOutlined /> Difficulty: Medium
+                  <ExclamationCircleOutlined /> Difficulty: {taskData.difficulty}
                 </Tag>
                 <Tag className="px-3 py-1.5 text-sm rounded-md border-blue-400/30 bg-blue-500/20 text-blue-200 flex items-center gap-1.5 font-bold m-0">
-                  <ClockCircleOutlined /> 3 Hours Est.
-                </Tag>
-                <Tag className="px-3 py-1.5 text-sm rounded-md border-red-500/30 bg-red-500/20 text-red-300 font-bold m-0 flex items-center gap-1.5">
-                  <ClockCircleOutlined /> Deadline: Today 11:59 PM
+                  <ClockCircleOutlined /> {taskData.estimatedTime || 'N/A'} Est.
                 </Tag>
               </Space>
             </div>
@@ -121,40 +247,20 @@ export default function TodaysTask() {
             headStyle={{ borderBottom: '1px solid #f1f5f9', padding: '16px 24px', minHeight: 'auto' }}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-              <a href="#" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group">
-                <Avatar size={40} icon={<FilePdfOutlined />} className="bg-red-100 text-red-600" />
-                <div className="flex-1">
-                  <Text className="block text-slate-900 font-bold group-hover:text-blue-700 transition-colors">API Architecture Guide</Text>
-                  <Text className="text-xs text-slate-500 font-medium">PDF Document • 2.4 MB</Text>
-                </div>
-              </a>
-
-              <a href="#" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group">
-                <Avatar size={40} icon={<PlaySquareOutlined />} className="bg-blue-100 text-blue-700" />
-                <div className="flex-1">
-                  <Text className="block text-slate-900 font-bold group-hover:text-blue-700 transition-colors">JWT Setup Walkthrough</Text>
-                  <Text className="text-xs text-slate-500 font-medium">Video • 12 Mins</Text>
-                </div>
-              </a>
-
-              <a href="#" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group">
-                <Avatar size={40} icon={<GithubOutlined />} className="bg-slate-200 text-slate-800" />
-                <div className="flex-1">
-                  <Text className="block text-slate-900 font-bold group-hover:text-blue-700 transition-colors">Starter Repository</Text>
-                  <Text className="text-xs text-slate-500 font-medium">GitHub Link</Text>
-                </div>
-              </a>
-
-              <a href="#" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group">
-                <Avatar size={40} icon={<LinkOutlined />} className="bg-emerald-100 text-emerald-700" />
-                <div className="flex-1">
-                  <Text className="block text-slate-900 font-bold group-hover:text-blue-700 transition-colors">Bcrypt Documentation</Text>
-                  <Text className="text-xs text-slate-500 font-medium">External Reference</Text>
-                </div>
-              </a>
+              {taskData.resources?.map((res) => (
+                <a key={res.id} href={res.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group">
+                  <Avatar size={40} icon={<LinkOutlined />} className="bg-emerald-100 text-emerald-700" />
+                  <div className="flex-1">
+                    <Text className="block text-slate-900 font-bold group-hover:text-blue-700 transition-colors">{res.title}</Text>
+                    <Text className="text-xs text-slate-500 font-medium">{res.type}</Text>
+                  </div>
+                </a>
+              ))}
+              {(!taskData.resources || taskData.resources.length === 0) && (
+                <Text type="secondary">No resources attached to this task.</Text>
+              )}
             </div>
           </Card>
-
         </Col>
 
         {/* RIGHT COLUMN (Action Center) */}
@@ -163,17 +269,50 @@ export default function TodaysTask() {
           {/* Action Button Bar */}
           <Card className="rounded-2xl border-slate-200 shadow-sm bg-white"  styles={{ body: { padding: '24px' } }}>
             <div className="flex flex-col gap-3">
-              <Button type="primary" icon={<UploadOutlined />} className="w-full h-12 rounded-xl font-bold text-base bg-blue-600 hover:bg-blue-700 border-blue-600 shadow-md shadow-blue-600/20 text-white mb-2">
-                Submit Task
+              <Button 
+                type="primary" 
+                icon={isApproved ? <CheckCircleOutlined /> : <UploadOutlined />} 
+                className={`w-full h-12 rounded-xl font-bold text-base shadow-md mb-2 ${
+                  isApproved 
+                    ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-emerald-600/20' 
+                    : 'bg-blue-600 hover:bg-blue-700 border-blue-600 shadow-blue-600/20'
+                } text-white`}
+                onClick={handleSubmitTask}
+                loading={submitting}
+                disabled={isApproved || hasSubmission} // Disable if pending or approved
+              >
+                {isApproved ? 'Task Approved' : hasSubmission ? 'Task Submitted (Pending)' : 'Submit Task'}
               </Button>
-              <Button icon={<RobotOutlined />} className="w-full h-11 rounded-xl font-bold bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100 hover:border-violet-300">
+              
+              <Button 
+                icon={<RobotOutlined />} 
+                className="w-full h-11 rounded-xl font-bold bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100 hover:border-violet-300"
+                onClick={() => {
+                  if (!hasFeedback) {
+                    message.info('AI is still evaluating your submission. Please check back in a few seconds.');
+                  } else {
+                    setIsAiModalVisible(true);
+                  }
+                }}
+                disabled={!hasSubmission}
+              >
                 View AI Feedback
               </Button>
+
               <Divider className="my-2 border-slate-100" />
-              <Button icon={<CodeOutlined />} className="w-full h-11 rounded-xl font-bold border-blue-200 text-blue-800 bg-blue-50 hover:bg-blue-100 hover:border-blue-300">
+              
+              <Button 
+                icon={<CodeOutlined />} 
+                className="w-full h-11 rounded-xl font-bold border-blue-200 text-blue-800 bg-blue-50 hover:bg-blue-100 hover:border-blue-300"
+                onClick={handleOpenVSCode}
+              >
                 Open VS Code
               </Button>
-              <Button icon={<GithubOutlined />} className="w-full h-11 rounded-xl font-bold border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 bg-slate-50">
+              <Button 
+                icon={<GithubOutlined />} 
+                className="w-full h-11 rounded-xl font-bold border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 bg-slate-50"
+                onClick={handleViewRepository}
+              >
                 View Repository
               </Button>
             </div>
@@ -217,6 +356,42 @@ export default function TodaysTask() {
 
         </Col>
       </Row>
+
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-violet-700">
+            <RobotOutlined className="text-2xl" />
+            <span className="text-lg font-bold">AI Evaluation Result</span>
+          </div>
+        }
+        visible={isAiModalVisible}
+        onCancel={() => setIsAiModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" className="bg-violet-600 hover:bg-violet-700" onClick={() => setIsAiModalVisible(false)}>
+            Close
+          </Button>
+        ]}
+      >
+        {submission?.aiEvaluation ? (
+          <div className="space-y-4 py-4">
+            <div className="flex justify-between items-center bg-violet-50 p-4 rounded-xl border border-violet-200">
+              <Text className="font-bold text-violet-900">Overall Score</Text>
+              <Text className="font-black text-2xl text-violet-700">{submission.aiEvaluation.score}/100</Text>
+            </div>
+            <div>
+              <Text className="font-bold text-slate-800 block mb-1">Feedback</Text>
+              <Paragraph className="text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                {submission.aiEvaluation.feedback}
+              </Paragraph>
+            </div>
+          </div>
+        ) : (
+          <div className="p-8 text-center">
+            <Spin />
+            <Text className="block mt-4 text-slate-500">AI is still generating feedback...</Text>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
