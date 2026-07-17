@@ -243,7 +243,7 @@ model AIEvaluation {
 
 model Assessment {
   id           String   @id @default(uuid())
-  week         Int
+  week         Int      @default(1)
   title        String
   description  String?
   passingMarks Float

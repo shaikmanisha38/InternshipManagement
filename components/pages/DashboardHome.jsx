@@ -35,7 +35,7 @@ export default function DashboardHome() {
           let errMsg = 'Failed to fetch dashboard data';
           try {
              const errData = await response.json();
-             errMsg = errData.message || errMsg;
+             errMsg = errData.error ? `${errData.message}: ${errData.error}` : (errData.message || errMsg);
           } catch(e) {}
           throw new Error(`${response.status}: ${errMsg}`);
         }
@@ -297,8 +297,13 @@ export default function DashboardHome() {
           </Card>
 
           {/* Recent Activities Timeline */}
-          <Card className="rounded-2xl border-slate-200 shadow-sm" title={<Text className="text-slate-800 font-bold text-lg" styles={{ body: { padding: '24px 24px 8px 24px' } }}>Recent Activities</Text>} 
-            headStyle={{ borderBottom: '1px solid #f1f5f9', padding: '16px 24px', minHeight: 'auto' }}
+          <Card 
+            className="rounded-2xl border-slate-200 shadow-sm" 
+            title={<Text className="text-slate-800 font-bold text-lg">Recent Activities</Text>} 
+            styles={{ 
+              body: { padding: '24px 24px 8px 24px' },
+              header: { borderBottom: '1px solid #f1f5f9', padding: '16px 24px', minHeight: 'auto' }
+            }}
           >
             {recentActivities && recentActivities.length > 0 ? (
               <Timeline

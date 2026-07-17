@@ -64,21 +64,21 @@ export default function DashboardLayout({ role = "student", children }) {
       case 'student':
       default:
         return [
-          { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-          { name: 'My Internship', path: '/dashboard/internship', icon: Briefcase },
-          { name: 'Today\'s Task', path: '/dashboard/task', icon: CheckSquare },
-          { name: 'Roadmap', path: '/dashboard/roadmap', icon: Map },
-          { name: 'Daily Submission', path: '/dashboard/submission', icon: UploadCloud },
-          { name: 'GitHub Integration', path: '/dashboard/github', icon: CodeIcon },
-          { name: 'AI Feedback', path: '/dashboard/ai-feedback', icon: Cpu },
-          { name: 'Weekly Assessments', path: '/dashboard/assessments', icon: ClipboardCheck },
-          { name: 'Progress', path: '/dashboard/progress', icon: TrendingUp },
-          { name: 'Attendance', path: '/dashboard/attendance', icon: CalendarDays },
-          { name: 'Leaderboard', path: '/dashboard/leaderboard', icon: Trophy },
-          { name: 'Badges', path: '/dashboard/badges', icon: Medal },
-          { name: 'Certificates', path: '/dashboard/certificates', icon: Award },
-          { name: 'Profile', path: '/dashboard/profile', icon: User },
-          { name: 'Settings', path: '/dashboard/settings', icon: Settings },
+          { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, group: 'Overview' },
+          { name: 'My Internship', path: '/dashboard/internship', icon: Briefcase, group: 'Internship Details' },
+          { name: 'Roadmap', path: '/dashboard/roadmap', icon: Map, group: 'Learning & Tasks' },
+          { name: 'Today\'s Task', path: '/dashboard/task', icon: CheckSquare, group: 'Learning & Tasks' },
+          { name: 'Daily Submission', path: '/dashboard/submission', icon: UploadCloud, group: 'Learning & Tasks' },
+          { name: 'Weekly Assessments', path: '/dashboard/assessments', icon: ClipboardCheck, group: 'Learning & Tasks' },
+          { name: 'GitHub Integration', path: '/dashboard/github', icon: CodeIcon, group: 'Tools & Integrations' },
+          { name: 'AI Feedback', path: '/dashboard/ai-feedback', icon: Cpu, group: 'Tools & Integrations' },
+          { name: 'Progress', path: '/dashboard/progress', icon: TrendingUp, group: 'Tracking & Analytics' },
+          { name: 'Attendance', path: '/dashboard/attendance', icon: CalendarDays, group: 'Tracking & Analytics' },
+          { name: 'Leaderboard', path: '/dashboard/leaderboard', icon: Trophy, group: 'Gamification & Rewards' },
+          { name: 'Badges', path: '/dashboard/badges', icon: Medal, group: 'Gamification & Rewards' },
+          { name: 'Certificates', path: '/dashboard/certificates', icon: Award, group: 'Gamification & Rewards' },
+          { name: 'Profile', path: '/dashboard/profile', icon: User, group: 'Account' },
+          { name: 'Settings', path: '/dashboard/settings', icon: Settings, group: 'Account' },
         ];
     }
   };
@@ -117,28 +117,40 @@ export default function DashboardLayout({ role = "student", children }) {
         {/* Navigation Links */}
         <div className="p-4 flex-1">
           <nav className="space-y-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={
-                  `flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-sm ${pathname === item.path
-                    ? 'bg-primary/20 text-primary border border-primary/30 shadow-lg shadow-primary/10'
-                    : 'text-textMuted hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className={`w-5 h-5 ${item.highlight ? 'text-accent animate-pulse' : ''}`} />
-                  <span className={item.highlight ? 'text-white' : ''}>{item.name}</span>
-                </div>
-                {item.highlight && (
-                  <span className="px-2 py-0.5 rounded-md bg-accent/20 text-accent text-[10px] font-bold border border-accent/30">
-                    NEW
-                  </span>
-                )}
-              </Link>
-            ))}
+            {navItems.map((item, index) => {
+              const previousGroup = index > 0 ? navItems[index - 1].group : null;
+              const currentGroup = item.group;
+              const showGroupHeader = currentGroup && currentGroup !== previousGroup;
+
+              return (
+                <React.Fragment key={item.path}>
+                  {showGroupHeader && (
+                    <div className="pt-4 pb-2 px-4 text-xs font-bold text-textMuted uppercase tracking-wider">
+                      {currentGroup}
+                    </div>
+                  )}
+                  <Link
+                    href={item.path}
+                    className={
+                      `flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-sm ${pathname === item.path
+                        ? 'bg-primary/20 text-primary border border-primary/30 shadow-lg shadow-primary/10'
+                        : 'text-textMuted hover:text-white hover:bg-white/5'
+                      }`
+                    }
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon className={`w-5 h-5 ${item.highlight ? 'text-accent animate-pulse' : ''}`} />
+                      <span className={item.highlight ? 'text-white' : ''}>{item.name}</span>
+                    </div>
+                    {item.highlight && (
+                      <span className="px-2 py-0.5 rounded-md bg-accent/20 text-accent text-[10px] font-bold border border-accent/30">
+                        NEW
+                      </span>
+                    )}
+                  </Link>
+                </React.Fragment>
+              );
+            })}
           </nav>
         </div>
 
