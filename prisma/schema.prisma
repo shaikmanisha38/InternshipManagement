@@ -211,6 +211,8 @@ model GithubAccount {
   accessToken   String?
   repository    String?
   isConnected   Boolean  @default(false)
+  repositoryUrl String?
+  webhookId     String?
   updatedAt     DateTime @default(now()) @updatedAt
 
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -236,6 +238,7 @@ model AiEvaluation {
   submissionId  String   @unique
   score         Float
   feedback      String?
+  metrics       Json?
   suggestions   Json?
   strengths     Json?
   weaknesses    Json?
