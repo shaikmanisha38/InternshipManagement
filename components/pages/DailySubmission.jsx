@@ -1,5 +1,7 @@
-import React from 'react';
-import { Card, Form, Input, Select, Button, Typography, Row, Col, Tag, Timeline, Divider, Space } from 'antd';
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { Card, Form, Input, Select, Button, Typography, Row, Col, Tag, Timeline, Divider, Space, Spin, Result, message } from 'antd';
 import {
   GithubOutlined,
   BranchesOutlined,
@@ -11,6 +13,7 @@ import {
   WarningFilled,
   LinkOutlined
 } from '@ant-design/icons';
+import Cookies from 'js-cookie';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -18,10 +21,180 @@ const { Option } = Select;
 
 export default function DailySubmission() {
   const [form] = Form.useForm();
+  
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [assigned, setAssigned] = useState(true);
+  const [workspace, setWorkspace] = useState(null);
+  const [history, setHistory] = useState([]);
 
-  const handleFinish = (values) => {
-    console.log('Form submitted:', values);
+  useEffect(() => {
+    const fetchWorkspace = async () => {
+      try {
+        const token = Cookies.get('token') || localStorage.getItem('token');
+        const res = await fetch('/api/v1/student/workspace', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error('Failed to fetch workspace data');
+        
+        const data = await res.json();
+        
+        if (!data.assigned) {
+          setAssigned(false);
+        } else {
+          setAssigned(true);
+          setWorkspace(data.workspace);
+          setHistory(data.history || []);
+          
+          form.setFieldsValue({
+            repoUrl: data.workspace.repoName !== 'Not Connected' ? data.workspace.repoName : ''
+          });
+        }
+      } catch (err) {
+        message.error(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWorkspace();
+  }, [form]);
+
+  const handleFinish = async (values) => {
+    if (!workspace?.taskId) {
+      message.error("Cannot submit: No active task found for today's session.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const token = Cookies.get('token') || localStorage.getItem('token');
+      const res = await fetch('/api/v1/submissions', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          taskId: workspace.taskId,
+          repositoryUrl: values.repoUrl,
+          branch: values.branch,
+          commitHash: values.commitHash,
+          notes: values.notes
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Submission failed');
+      }
+
+      const newSubmission = await res.json();
+      message.success('Progress submitted successfully!');
+      
+      // Update history in real-time
+      setHistory(prev => [newSubmission, ...prev]);
+      
+      // Reset specific fields
+      form.resetFields(['commitHash', 'notes']);
+      
+    } catch (err) {
+      message.error(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const renderTimelineItems = () => {
+    return history.map((sub, index) => {
+      const isAccepted = sub.status === 'VERIFIED';
+      const isPending = sub.status === 'PENDING';
+      const isFailed = sub.status === 'FAILED';
+      
+      // Calculate Day format for icon (D1, D2 etc). Just arbitrary based on history length if we don't have the day from task
+      // In real scenario we get day from sub.task.roadmapDay.dayNumber
+      const dayNum = sub.task?.roadmapDay?.dayNumber || (history.length - index);
+      const submittedDate = new Date(sub.submittedAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+
+      return {
+        key: sub.id,
+        dot: (
+          <div className={`w-8 h-8 rounded-full bg-slate-50 border-2 ${isAccepted ? 'border-emerald-500' : isFailed ? 'border-red-500' : 'border-blue-500'} flex items-center justify-center z-10 relative`}>
+            <Text className={`${isAccepted ? 'text-emerald-700' : isFailed ? 'text-red-700' : 'text-blue-700'} font-bold text-xs`}>D{dayNum}</Text>
+          </div>
+        ),
+        content: (
+          <div className="pl-4 pb-8 -mt-1.5">
+            <div className="flex justify-between items-start mb-2">
+              <Text className="font-bold text-slate-900 text-base">Day {dayNum} Submission</Text>
+              <Text className="text-slate-400 text-xs font-semibold">{submittedDate}</Text>
+            </div>
+            
+            <Space size={[8, 8]} wrap className="mb-3">
+              {isAccepted && (
+                <Tag className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded m-0 flex items-center gap-1.5 w-max">
+                  <CheckCircleFilled className="text-emerald-500" /> Accepted
+                </Tag>
+              )}
+              {isFailed && (
+                <>
+                  <Tag className="px-3 py-1 bg-red-50 border border-red-200 text-red-800 font-bold rounded m-0 flex items-center gap-1.5">
+                    <CloseCircleFilled className="text-red-500" /> Rejected
+                  </Tag>
+                  <Tag className="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-800 font-bold rounded m-0 flex items-center gap-1.5">
+                    <WarningFilled className="text-amber-500" /> Needs Retry
+                  </Tag>
+                </>
+              )}
+              {isPending && (
+                <Tag className="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-800 font-bold rounded m-0 flex items-center gap-1.5 w-max">
+                  <ClockCircleOutlined className="text-blue-500" /> Pending Review
+                </Tag>
+              )}
+            </Space>
+            
+            {(sub.aiEvaluation?.feedback || sub.notes) && (
+              <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg flex flex-col gap-2">
+                {sub.aiEvaluation?.feedback && (
+                  <Text className="text-slate-600 font-medium text-sm">
+                    <Text className="font-bold text-slate-900">AI Feedback: </Text>
+                    {sub.aiEvaluation.feedback}
+                  </Text>
+                )}
+                {sub.notes && (
+                  <Text className="text-slate-600 font-medium text-sm">
+                    <Text className="font-bold text-slate-900">Your Notes: </Text>
+                    {sub.notes}
+                  </Text>
+                )}
+              </div>
+            )}
+          </div>
+        ),
+      };
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[600px]">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!assigned) {
+    return (
+      <div className="p-4 md:p-8 bg-slate-50 min-h-full flex items-center justify-center">
+        <Result
+          status="info"
+          title={<span className="text-slate-900 font-bold tracking-tight">No Active Internship</span>}
+          subTitle={<span className="text-slate-600 font-medium text-base">You are not currently assigned to an active internship. Your daily submission workspace and log will appear here once your internship begins.</span>}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 space-y-6 bg-slate-50 min-h-full">
@@ -41,41 +214,57 @@ export default function DailySubmission() {
               <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                 <Text className="text-indigo-600 uppercase text-xs font-bold tracking-widest block">Active Workspace Session</Text>
                 <Tag className="px-3 py-1.5 m-0 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded flex items-center gap-1.5">
-                  <ClockCircleOutlined /> Week 2 • Day 8
+                  <ClockCircleOutlined /> Week {workspace?.currentWeek || 1} • Day {workspace?.currentDay || 1}
                 </Tag>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4 pt-2">
                 <div>
                   <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Repository</Text>
-                  <Text className="text-slate-900 font-bold flex items-center gap-2"><GithubOutlined className="text-slate-400" /> frontend-ecommerce</Text>
+                  <Text className="text-slate-900 font-bold flex items-center gap-2">
+                    <GithubOutlined className="text-slate-400" /> 
+                    {workspace?.repoName || 'Not Connected'}
+                  </Text>
                 </div>
                 <div>
                   <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Branch</Text>
-                  <Text className="text-slate-900 font-bold flex items-center gap-2"><BranchesOutlined className="text-slate-400" /> feature/auth</Text>
+                  <Text className="text-slate-900 font-bold flex items-center gap-2">
+                    <BranchesOutlined className="text-slate-400" /> 
+                    {history.length > 0 && history[0].branch ? history[0].branch : 'feature/auth'}
+                  </Text>
                 </div>
                 <div>
                   <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Commit Hash</Text>
-                  <Text className="text-indigo-700 font-mono bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded text-sm font-bold">a1b2c3d</Text>
+                  <Text className="text-indigo-700 font-mono bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded text-sm font-bold">
+                    {history.length > 0 && history[0].commitHash ? history[0].commitHash.substring(0, 7) : 'a1b2c3d'}
+                  </Text>
                 </div>
                 <div>
                   <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Time Logged</Text>
-                  <Text className="text-slate-900 font-bold">3h 15m</Text>
+                  <Text className="text-slate-900 font-bold">--</Text>
                 </div>
                 <div>
                   <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Validation Status</Text>
-                  <Tag className="m-0 bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold rounded px-3">Ready</Tag>
+                  {history.length > 0 && history[0].status === 'VERIFIED' ? (
+                     <Tag className="m-0 bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold rounded px-3">Verified</Tag>
+                  ) : history.length > 0 && history[0].status === 'PENDING' ? (
+                     <Tag className="m-0 bg-blue-50 border border-blue-200 text-blue-700 font-bold rounded px-3">Pending</Tag>
+                  ) : (
+                     <Tag className="m-0 bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold rounded px-3">Ready</Tag>
+                  )}
                 </div>
                 <div>
                   <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Current Score</Text>
-                  <Text className="text-slate-900 font-bold text-lg leading-none">+150 XP</Text>
+                  <Text className="text-slate-900 font-bold text-lg leading-none">
+                    {history.length > 0 && history[0].aiEvaluation?.score ? `+${history[0].aiEvaluation.score} XP` : '+0 XP'}
+                  </Text>
                 </div>
               </div>
             </div>
           </Card>
 
           {/* Interactive Submission Form Card */}
-          <Card className="rounded-xl border border-slate-200 shadow-sm bg-white" title={<Title level={4} className="!text-slate-900 !m-0" styles={{ body: { padding: '32px' } }}>Submit Day 8 Progress</Title>}
+          <Card className="rounded-xl border border-slate-200 shadow-sm bg-white" title={<Title level={4} className="!text-slate-900 !m-0" styles={{ body: { padding: '32px' } }}>Submit Day {workspace?.currentDay || 1} Progress</Title>}
             headStyle={{ borderBottom: '1px solid #f1f5f9', padding: '24px 32px 16px 32px', minHeight: 'auto' }}
           >
             <Form
@@ -103,6 +292,7 @@ export default function DailySubmission() {
                     label={<Text className="font-bold text-slate-700">Target Branch</Text>}
                     name="branch"
                     rules={[{ required: true, message: 'Please select branch' }]}
+                    initialValue="main"
                   >
                     <Select
                       placeholder="Select branch"
@@ -148,6 +338,7 @@ export default function DailySubmission() {
                   type="primary"
                   htmlType="submit"
                   size="large"
+                  loading={submitting}
                   icon={<UploadOutlined />}
                   className="h-12 px-8 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-sm text-white"
                 >
@@ -164,64 +355,16 @@ export default function DailySubmission() {
             headStyle={{ borderBottom: '1px solid #f1f5f9', padding: '24px 32px 16px 32px', minHeight: 'auto' }}
           >
             <div className="pt-4">
-              <Timeline
-                className="[&_.ant-timeline-item-tail]:border-slate-200"
-                items={[
-                  {
-                    dot: <div className="w-8 h-8 rounded-full bg-slate-50 border-2 border-emerald-500 flex items-center justify-center z-10 relative"><Text className="text-emerald-700 font-bold text-xs">D3</Text></div>,
-                    content: (
-                      <div className="pl-4 pb-8 -mt-1.5">
-                        <div className="flex justify-between items-start mb-2">
-                          <Text className="font-bold text-slate-900 text-base">Day 3 Submission</Text>
-                          <Text className="text-slate-400 text-xs font-semibold">Jul 03, 2026</Text>
-                        </div>
-                        <Tag className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded m-0 flex items-center gap-1.5 w-max mb-3">
-                          <CheckCircleFilled className="text-emerald-500" /> Accepted
-                        </Tag>
-                        <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg">
-                          <Text className="text-slate-600 font-medium text-sm"><Text className="font-bold text-slate-900">Feedback:</Text> Excellent architecture. API routes are structured perfectly according to REST standards.</Text>
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    dot: <div className="w-8 h-8 rounded-full bg-slate-50 border-2 border-red-500 flex items-center justify-center z-10 relative"><Text className="text-red-700 font-bold text-xs">D2</Text></div>,
-                    content: (
-                      <div className="pl-4 pb-8 -mt-1.5">
-                        <div className="flex justify-between items-start mb-2">
-                          <Text className="font-bold text-slate-900 text-base">Day 2 Submission</Text>
-                          <Text className="text-slate-400 text-xs font-semibold">Jul 02, 2026</Text>
-                        </div>
-                        <Space size={[8, 8]} wrap className="mb-3">
-                          <Tag className="px-3 py-1 bg-red-50 border border-red-200 text-red-800 font-bold rounded m-0 flex items-center gap-1.5">
-                            <CloseCircleFilled className="text-red-500" /> Rejected
-                          </Tag>
-                          <Tag className="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-800 font-bold rounded m-0 flex items-center gap-1.5">
-                            <WarningFilled className="text-amber-500" /> Needs Retry
-                          </Tag>
-                        </Space>
-                        <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg">
-                          <Text className="text-slate-600 font-medium text-sm"><Text className="font-bold text-slate-900">Feedback:</Text> Middleware implementation fails on edge cases. Missing error handlers for unauthenticated routes.</Text>
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    dot: <div className="w-8 h-8 rounded-full bg-slate-50 border-2 border-emerald-500 flex items-center justify-center z-10 relative"><Text className="text-emerald-700 font-bold text-xs">D1</Text></div>,
-                    content: (
-                      <div className="pl-4 pb-2 -mt-1.5">
-                        <div className="flex justify-between items-start mb-2">
-                          <Text className="font-bold text-slate-900 text-base">Day 1 Submission</Text>
-                          <Text className="text-slate-400 text-xs font-semibold">Jul 01, 2026</Text>
-                        </div>
-                        <Tag className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded m-0 flex items-center gap-1.5 w-max">
-                          <CheckCircleFilled className="text-emerald-500" /> Accepted
-                        </Tag>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
+              {history.length === 0 ? (
+                <div className="text-center py-8">
+                  <Text className="text-slate-400 font-medium">No submissions yet.</Text>
+                </div>
+              ) : (
+                <Timeline
+                  className="[&_.ant-timeline-item-tail]:border-slate-200"
+                  items={renderTimelineItems()}
+                />
+              )}
             </div>
           </Card>
         </Col>

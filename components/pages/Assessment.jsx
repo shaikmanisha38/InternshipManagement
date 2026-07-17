@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from 'react';
-import { Card, Typography, Tag, Button, Progress, Row, Col, Space, Alert, Divider } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Tag, Button, Progress, Row, Col, Space, Alert, Divider, Spin, message } from 'antd';
 import {
   PlayCircleOutlined,
   CheckCircleFilled,
@@ -11,28 +11,66 @@ import {
   TrophyOutlined,
   LockOutlined
 } from '@ant-design/icons';
+import Cookies from 'js-cookie';
 
 const { Title, Text, Paragraph } = Typography;
 
 export default function Assessment() {
-  const [assessmentStatus, setAssessmentStatus] = useState('completed'); // 'pending' or 'completed'
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    const fetchAssessmentData = async () => {
+      try {
+        const token = Cookies.get('token') || localStorage.getItem('token');
+        const res = await fetch('/api/v1/student/assessment/current', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch assessment data');
+        }
+
+        const result = await res.json();
+        setData(result);
+      } catch (err) {
+        message.error(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssessmentData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[600px]">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!data || !data.assessment) {
+    return (
+      <div className="p-4 md:p-8 bg-blue-50/50 min-h-full">
+        <Alert
+          message="No Assessment Available"
+          description={data?.message || "There is no assessment scheduled for you at this time."}
+          type="info"
+          showIcon
+        />
+      </div>
+    );
+  }
+
+  const { status, assessment, submission, message: statusMsg } = data;
 
   return (
     <div className="p-4 md:p-8 space-y-6 bg-blue-50/50 min-h-full">
-      <div className="mb-6 flex justify-between items-end">
-        <div>
-          <Title level={2} className="!text-slate-900 !mb-2">Weekly Assessment</Title>
-          <Text className="text-slate-700 font-medium text-base">Evaluate your conceptual knowledge and practical coding skills.</Text>
-        </div>
-        <div className="hidden sm:block">
-          <Button
-            type="dashed"
-            onClick={() => setAssessmentStatus(prev => prev === 'pending' ? 'completed' : 'pending')}
-            className="text-slate-500 border-slate-300 font-medium"
-          >
-            Toggle Mock State: {assessmentStatus === 'pending' ? 'Pending' : 'Completed'}
-          </Button>
-        </div>
+      <div className="mb-6">
+        <Title level={2} className="!text-slate-900 !mb-2">Weekly Assessment</Title>
+        <Text className="text-slate-700 font-medium text-base">Evaluate your conceptual knowledge and practical coding skills.</Text>
       </div>
 
       <div className="max-w-4xl mx-auto space-y-8">
@@ -47,20 +85,26 @@ export default function Assessment() {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <Text className="text-blue-600 font-black text-sm uppercase tracking-widest">Active Exam</Text>
-                  {assessmentStatus === 'pending' ? (
-                    <Tag className="m-0 bg-amber-50 border border-amber-200 text-amber-700 font-bold px-3 py-0.5 rounded-md flex items-center gap-1.5">
-                      <ClockCircleOutlined /> Pending
+                  {status === 'locked' && (
+                    <Tag className="m-0 bg-slate-50 border border-slate-200 text-slate-500 font-bold px-3 py-0.5 rounded-md flex items-center gap-1.5">
+                      <LockOutlined /> Locked
                     </Tag>
-                  ) : (
+                  )}
+                  {status === 'pending' && (
+                    <Tag className="m-0 bg-amber-50 border border-amber-200 text-amber-700 font-bold px-3 py-0.5 rounded-md flex items-center gap-1.5">
+                      <ClockCircleOutlined /> Available
+                    </Tag>
+                  )}
+                  {status === 'completed' && (
                     <Tag className="m-0 bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold px-3 py-0.5 rounded-md flex items-center gap-1.5">
                       <CheckCircleFilled className="text-emerald-500" /> Completed
                     </Tag>
                   )}
                 </div>
-                <Title level={2} className="!text-slate-900 !m-0">Week 3 Evaluation</Title>
+                <Title level={2} className="!text-slate-900 !m-0">{assessment.title}</Title>
               </div>
 
-              {assessmentStatus === 'pending' ? (
+              {status === 'pending' ? (
                 <Button
                   type="primary"
                   size="large"
@@ -69,7 +113,7 @@ export default function Assessment() {
                 >
                   Start Assessment
                 </Button>
-              ) : (
+              ) : status === 'locked' ? (
                 <Button
                   type="default"
                   size="large"
@@ -79,8 +123,22 @@ export default function Assessment() {
                 >
                   Assessment Locked
                 </Button>
+              ) : (
+                <Button
+                  type="default"
+                  size="large"
+                  icon={<CheckCircleFilled />}
+                  disabled
+                  className="rounded-xl h-12 px-8 font-bold bg-emerald-50 border-emerald-200 text-emerald-600 w-full md:w-auto"
+                >
+                  Completed
+                </Button>
               )}
             </div>
+
+            {status === 'locked' && statusMsg && (
+              <Alert message={statusMsg} type="warning" showIcon className="mb-6 rounded-lg" />
+            )}
 
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-6">
               <Text className="text-slate-400 text-xs font-bold uppercase tracking-wider block mb-4">Assessment Breakdown</Text>
@@ -92,7 +150,7 @@ export default function Assessment() {
                     </div>
                     <div>
                       <Text className="text-slate-900 font-bold block leading-tight mb-1">Quiz Module</Text>
-                      <Text className="text-slate-500 font-medium text-sm">30 Multiple Choice Questions</Text>
+                      <Text className="text-slate-500 font-medium text-sm">{assessment.quizQuestions} Multiple Choice</Text>
                     </div>
                   </div>
                 </Col>
@@ -103,7 +161,7 @@ export default function Assessment() {
                     </div>
                     <div>
                       <Text className="text-slate-900 font-bold block leading-tight mb-1">Coding Module</Text>
-                      <Text className="text-slate-500 font-medium text-sm">2 Algorithmic Problems</Text>
+                      <Text className="text-slate-500 font-medium text-sm">{assessment.codingProblems} Algorithmic Problems</Text>
                     </div>
                   </div>
                 </Col>
@@ -114,7 +172,7 @@ export default function Assessment() {
                     </div>
                     <div>
                       <Text className="text-slate-900 font-bold block leading-tight mb-1">Total Marks</Text>
-                      <Text className="text-slate-500 font-medium text-sm">100 Points Available</Text>
+                      <Text className="text-slate-500 font-medium text-sm">{assessment.totalMarks} Points Available</Text>
                     </div>
                   </div>
                 </Col>
@@ -124,7 +182,7 @@ export default function Assessment() {
         </Card>
 
         {/* ZONE 2: POST-COMPLETION PERFORMANCE DASHBOARD */}
-        {assessmentStatus === 'completed' && (
+        {status === 'completed' && submission && (
           <div className="animate-fade-in-up space-y-6">
             <Title level={4} className="!text-slate-900 !m-0 !mt-2">Performance Results</Title>
 
@@ -136,7 +194,7 @@ export default function Assessment() {
 
                   <Progress
                     type="circle"
-                    percent={82}
+                    percent={submission.score}
                     strokeColor={{ '0%': '#10b981', '100%': '#059669' }}
                     strokeWidth={8}
                     size={160}
@@ -151,11 +209,11 @@ export default function Assessment() {
                   <div className="w-full mt-8 grid grid-cols-2 gap-4">
                     <div className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-3 text-center">
                       <CheckCircleFilled className="text-emerald-500 text-lg mb-1" />
-                      <Text className="text-emerald-800 font-bold block text-sm">24 Correct</Text>
+                      <Text className="text-emerald-800 font-bold block text-sm">{submission.correctCount} Correct</Text>
                     </div>
                     <div className="bg-rose-50/50 border border-rose-100 rounded-lg p-3 text-center">
                       <CloseCircleFilled className="text-rose-500 text-lg mb-1" />
-                      <Text className="text-rose-800 font-bold block text-sm">6 Wrong</Text>
+                      <Text className="text-rose-800 font-bold block text-sm">{submission.wrongCount} Wrong</Text>
                     </div>
                   </div>
                 </Card>
@@ -167,33 +225,41 @@ export default function Assessment() {
                   <Title level={4} className="!text-slate-900 !m-0 !mb-6">Assessment Feedback</Title>
 
                   <Alert
-                    title={<Text className="font-bold text-blue-900 text-base">Excellent Performance Overview</Text>}
-                    description={<Text className="text-blue-800 font-medium">You have successfully passed the Week 3 evaluation with honors. Your conceptual understanding is solid.</Text>}
-                    type="info"
+                    title={<Text className="font-bold text-blue-900 text-base">Performance Overview</Text>}
+                    description={<Text className="text-blue-800 font-medium">Your submission has been automatically evaluated.</Text>}
+                    type={submission.score >= assessment.passingMarks ? 'success' : 'warning'}
                     showIcon
                     className="rounded-xl border-blue-200 bg-blue-50 mb-6 [&_.ant-alert-icon]:mt-1"
                   />
 
-                  <div className="space-y-6">
-                    <div>
-                      <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">Quiz Module Analysis</Text>
-                      <Paragraph className="text-slate-700 font-medium text-sm leading-relaxed mb-0">
-                        You scored exceptionally well in the React Lifecycle and Hooks questions. However, you lost minor points in the advanced State Management questions (specifically around Redux middleware). Consider reviewing action dispatching concepts.
-                      </Paragraph>
-                    </div>
+                  {submission.feedback && (
+                    <div className="space-y-6">
+                      {submission.feedback.quiz && (
+                        <>
+                          <div>
+                            <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">Quiz Module Analysis</Text>
+                            <Paragraph className="text-slate-700 font-medium text-sm leading-relaxed mb-0">
+                              {submission.feedback.quiz}
+                            </Paragraph>
+                          </div>
+                          <Divider className="my-0 border-slate-100" />
+                        </>
+                      )}
 
-                    <Divider className="my-0 border-slate-100" />
-
-                    <div>
-                      <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">Coding Module Analysis</Text>
-                      <Paragraph className="text-slate-700 font-medium text-sm leading-relaxed mb-0">
-                        <ul className="pl-5 m-0 space-y-1">
-                          <li><Text className="text-slate-900 font-bold">Algorithm 1 (Array Sorting):</Text> Perfect execution. Optimal time complexity (O(n log n)) was achieved.</li>
-                          <li><Text className="text-slate-900 font-bold">Algorithm 2 (Tree Traversal):</Text> The logic was correct, but the recursion depth exceeded limits on large hidden test cases. Iterative BFS is recommended for extreme data sets.</li>
-                        </ul>
-                      </Paragraph>
+                      {submission.feedback.coding && (
+                        <div>
+                          <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">Coding Module Analysis</Text>
+                          <Paragraph className="text-slate-700 font-medium text-sm leading-relaxed mb-0">
+                            {submission.feedback.coding}
+                          </Paragraph>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
+                  
+                  {!submission.feedback && (
+                    <Text className="text-slate-500 italic">No detailed feedback available for this submission.</Text>
+                  )}
                 </Card>
               </Col>
             </Row>
@@ -203,4 +269,3 @@ export default function Assessment() {
     </div>
   );
 }
-

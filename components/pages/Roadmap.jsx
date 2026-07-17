@@ -1,16 +1,70 @@
-import React from 'react';
-import { Card, Typography, Row, Col } from 'antd';
+"use client";
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Row, Col, Spin, Alert, message } from 'antd';
 import { 
   CheckCircleFilled, 
   PlayCircleFilled, 
   LockFilled,
   CalendarOutlined
 } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
 
 export default function Roadmap() {
-  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [roadmapData, setRoadmapData] = useState(null);
+  const [weeksDetails, setWeeksDetails] = useState([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchRoadmap = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        // 1. Fetch current roadmap summary
+        const res = await fetch('http://localhost:3000/api/v1/roadmaps/current', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch roadmap data. Make sure you are assigned to an internship.');
+        }
+
+        const data = await res.json();
+        setRoadmapData(data);
+
+        // 2. Fetch days for each week concurrently
+        if (data.weeks && data.weeks.length > 0) {
+          const weeksPromises = data.weeks.map(week => 
+            fetch(`http://localhost:3000/api/v1/roadmaps/week/${data.id}?weekNumber=${week.weekNumber}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }).then(r => r.json())
+          );
+
+          const weeksData = await Promise.all(weeksPromises);
+          
+          // Sort weeks by weekNumber just to be safe
+          weeksData.sort((a, b) => a.week.weekNumber - b.week.weekNumber);
+          setWeeksDetails(weeksData);
+        }
+
+      } catch (err) {
+        setError(err.message);
+        message.error(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoadmap();
+  }, [router]);
+
   const StatusCard = ({ day, title, status, desc }) => {
     let bgClass = '';
     let textClass = '';
@@ -27,7 +81,8 @@ export default function Roadmap() {
       borderClass = 'border-blue-300 border-2 shadow-sm';
       textClass = 'text-slate-900';
       icon = <PlayCircleFilled className="text-2xl text-blue-600 animate-pulse" />;
-    } else if (status === 'locked') {
+    } else {
+      // Locked default
       bgClass = 'bg-slate-100';
       borderClass = 'border-slate-200 opacity-70';
       textClass = 'text-slate-500';
@@ -52,6 +107,28 @@ export default function Roadmap() {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[600px]">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <Alert message="Error" description={error} type="error" showIcon />
+      </div>
+    );
+  }
+
+  if (!roadmapData) return null;
+
+  // Assume current focus is the first day of the first week that is not completed.
+  // We'll just hardcode Week 1 Day 1 if no logic exists, or use data if available.
+  const currentWeekDisplay = roadmapData.weeks && roadmapData.weeks.length > 0 ? roadmapData.weeks[0].weekNumber : 1;
+
   return (
     <div className="p-4 md:p-8 space-y-8 bg-slate-50 min-h-full">
       
@@ -59,13 +136,15 @@ export default function Roadmap() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <Title level={2} className="!text-slate-900 !mb-2">Internship Roadmap</Title>
-          <Text className="text-slate-700 font-medium text-base">Track your progress and upcoming milestones.</Text>
+          <Text className="text-slate-700 font-medium text-base">
+            Track your progress for <strong className="text-blue-700">{roadmapData.title}</strong>
+          </Text>
         </div>
         <div className="bg-white px-5 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
           <CalendarOutlined className="text-blue-600 text-xl" />
           <div>
             <Text className="text-xs uppercase font-bold text-slate-500 tracking-wider block leading-tight">Current Focus</Text>
-            <Text className="text-slate-900 font-bold leading-tight">Week 2, Day 8</Text>
+            <Text className="text-slate-900 font-bold leading-tight">Week {currentWeekDisplay}</Text>
           </div>
         </div>
       </div>
@@ -74,84 +153,67 @@ export default function Roadmap() {
       <Row gutter={[48, 32]} className="relative">
         
         {/* Vertical Timeline Line (Desktop) */}
-        <div className="hidden lg:block absolute left-[30px] top-6 bottom-0 w-1 bg-slate-200 rounded-full z-0"></div>
+        {weeksDetails.length > 0 && (
+          <div className="hidden lg:block absolute left-[30px] top-6 bottom-0 w-1 bg-slate-200 rounded-full z-0"></div>
+        )}
 
-        {/* WEEK 1 */}
-        <Col span={24} className="relative z-10">
-          <div className="flex items-start gap-8">
-            <div className="hidden lg:flex shrink-0 w-16 h-16 bg-slate-900 rounded-2xl items-center justify-center border-4 border-slate-50 shadow-sm">
-              <Text className="text-white font-black text-xl">W1</Text>
-            </div>
-            
-            <div className="flex-1 space-y-6">
-              <Card className="rounded-2xl border-slate-200 shadow-sm bg-white"  styles={{ body: { padding: '32px' } }}>
-                <Title level={4} className="!text-slate-900 !mb-2">Week 1: Foundations & Architecture</Title>
-                <Text className="text-slate-700 font-medium block mb-6">Mastering the basics of API design and environment setup.</Text>
-                
-                <div className="space-y-4">
-                  <StatusCard 
-                    day="1" 
-                    title="Environment Setup & Node.js Basics" 
-                    desc="Initialize project, install dependencies, and create a basic server."
-                    status="completed" 
-                  />
-                  <StatusCard 
-                    day="2" 
-                    title="Express.js Routing" 
-                    desc="Set up application routes, middleware, and error handling."
-                    status="completed" 
-                  />
-                  <StatusCard 
-                    day="3" 
-                    title="Database Integration (MongoDB)" 
-                    desc="Connect to MongoDB using Mongoose and define schemas."
-                    status="completed" 
-                  />
-                  <StatusCard 
-                    day="4" 
-                    title="Weekly Assessment & Review" 
-                    desc="Complete the Week 1 quiz and push all code to GitHub."
-                    status="locked" 
-                  />
-                </div>
-              </Card>
-            </div>
-          </div>
-        </Col>
+        {weeksDetails.length === 0 && (
+           <Col span={24}>
+             <Alert message="No roadmap data available for this internship track yet." type="info" showIcon />
+           </Col>
+        )}
 
-        {/* WEEK 2 */}
-        <Col span={24} className="relative z-10">
-          <div className="flex items-start gap-8">
-            <div className="hidden lg:flex shrink-0 w-16 h-16 bg-blue-600 rounded-2xl items-center justify-center border-4 border-slate-50 shadow-md">
-              <Text className="text-white font-black text-xl">W2</Text>
-            </div>
-            
-            <div className="flex-1 space-y-6">
-              <Card className="rounded-2xl border-blue-200 shadow-md bg-white ring-1 ring-blue-100"  styles={{ body: { padding: '32px' } }}>
-                <div className="flex justify-between items-center mb-2">
-                  <Title level={4} className="!text-slate-900 !m-0">Week 2: Authentication & Security</Title>
-                  <span className="px-3 py-1 bg-blue-50 border border-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider rounded-md">Current Week</span>
+        {weeksDetails.map((weekDetail, index) => {
+          const { week, days } = weekDetail;
+          const isCurrentWeek = index === 0; // Just mock current week as first for now
+
+          return (
+            <Col span={24} className="relative z-10" key={week.id}>
+              <div className="flex items-start gap-8">
+                <div className={`hidden lg:flex shrink-0 w-16 h-16 rounded-2xl items-center justify-center border-4 border-slate-50 shadow-md ${isCurrentWeek ? 'bg-blue-600' : 'bg-slate-900'}`}>
+                  <Text className="text-white font-black text-xl">W{week.weekNumber}</Text>
                 </div>
-                <Text className="text-slate-700 font-medium block mb-6">Implementing secure JWT authentication flows and role-based access control.</Text>
                 
-                <div className="space-y-4">
-                  <StatusCard 
-                    day="8" 
-                    title="Build Login API (JWT Authentication)" 
-                    desc="Validate credentials, hash passwords, and issue access tokens."
-                    status="unlocked" 
-                  />
-                  <StatusCard 
-                    day="9" 
-                    title="Role-Based Access Control (RBAC)" 
-                    desc="Create middleware to protect routes based on user roles."
-                    status="locked" 
-                  />
+                <div className="flex-1 space-y-6">
+                  <Card 
+                    className={`rounded-2xl shadow-md bg-white ${isCurrentWeek ? 'border-blue-200 ring-1 ring-blue-100' : 'border-slate-200'}`} 
+                    bodyStyle={{ padding: '32px' }}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <Title level={4} className="!text-slate-900 !m-0">Week {week.weekNumber}: {week.title}</Title>
+                      {isCurrentWeek && (
+                        <span className="px-3 py-1 bg-blue-50 border border-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider rounded-md">Current Week</span>
+                      )}
+                    </div>
+                    <Text className="text-slate-700 font-medium block mb-6">{week.description}</Text>
+                    
+                    <div className="space-y-4">
+                      {days.map((day, dayIndex) => {
+                        // Determine mock status based on week/day for visual demonstration
+                        let status = 'locked';
+                        if (index === 0 && dayIndex === 0) status = 'completed';
+                        if (index === 0 && dayIndex === 1) status = 'unlocked';
+                        
+                        return (
+                          <StatusCard 
+                            key={day.id}
+                            day={day.dayNumber} 
+                            title={`Day ${day.dayNumber}`} 
+                            desc={day.topicsCovered ? day.topicsCovered.join(', ') : 'Topics not listed'}
+                            status={status} 
+                          />
+                        );
+                      })}
+                      {days.length === 0 && (
+                        <Text type="secondary">No days specified for this week yet.</Text>
+                      )}
+                    </div>
+                  </Card>
                 </div>
-              </Card>
-            </div>
-          </div>
-        </Col>
+              </div>
+            </Col>
+          );
+        })}
 
       </Row>
     </div>
