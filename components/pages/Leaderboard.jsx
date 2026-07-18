@@ -1,38 +1,64 @@
 "use client";
-import React, { useState } from 'react';
-import { Card, Typography, Select, Table, Avatar, Tag, Space, Input, Button } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Select, Table, Avatar, Tag, Space, Input, Button, Skeleton } from 'antd';
 import { 
   TrophyFilled, 
   CrownFilled,
   UserOutlined,
   SearchOutlined,
   ReloadOutlined,
-  CodeFilled,
-  FireFilled,
-  CalendarFilled,
-  StarFilled,
-  RocketFilled
+  StarFilled
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Mock Leaderboard Data
-const leaderboardData = [
-  { key: '1', rank: 1, name: 'Alex Developer', points: 2840, tasks: '38 / 40 Tasks', isCurrentUser: false },
-  { key: '2', rank: 2, name: 'Samantha UI', points: 2750, tasks: '37 / 40 Tasks', isCurrentUser: false },
-  { key: '3', rank: 3, name: 'David Backend', points: 2610, tasks: '35 / 40 Tasks', isCurrentUser: false },
-  { key: '4', rank: 4, name: 'Michael Smith', points: 2450, tasks: '34 / 40 Tasks', isCurrentUser: false },
-  { key: '5', rank: 5, name: 'Jessica Chen', points: 2320, tasks: '31 / 40 Tasks', isCurrentUser: true },
-  { key: '6', rank: 6, name: 'Robert Johnson', points: 2180, tasks: '28 / 40 Tasks', isCurrentUser: false },
-  { key: '7', rank: 7, name: 'Emily Davis', points: 2150, tasks: '28 / 40 Tasks', isCurrentUser: false },
-  { key: '8', rank: 8, name: 'William Brown', points: 1980, tasks: '25 / 40 Tasks', isCurrentUser: false },
-  { key: '9', rank: 9, name: 'Olivia Taylor', points: 1850, tasks: '22 / 40 Tasks', isCurrentUser: false },
-  { key: '10', rank: 10, name: 'James Wilson', points: 1720, tasks: '20 / 40 Tasks', isCurrentUser: false },
-];
-
 export default function Leaderboard() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Filters
+  const [college, setCollege] = useState('all');
+  const [department, setDepartment] = useState('all');
+  const [batch, setBatch] = useState('all');
   const [searchText, setSearchText] = useState('');
+
+  // Fetch Data Function
+  const fetchLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (college !== 'all') params.append('college', college);
+      if (department !== 'all') params.append('department', department);
+      if (batch !== 'all') params.append('batch', batch);
+      if (searchText) params.append('search', searchText);
+
+      const res = await fetch(`/api/v1/leaderboard?${params.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch leaderboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Debounce search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchLeaderboard();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [college, department, batch, searchText]);
+
+  const handleReset = () => {
+    setCollege('all');
+    setDepartment('all');
+    setBatch('all');
+    setSearchText('');
+  };
 
   // Render Rank Icon
   const renderRank = (rank) => {
@@ -43,14 +69,17 @@ export default function Leaderboard() {
   };
 
   // Render Mini Badges in Table
-  const renderMiniBadges = (rank) => {
+  const renderMiniBadges = (badges) => {
+    if (!badges || badges.length === 0) return <Text className="text-slate-400 text-xs italic">No badges</Text>;
+    
     return (
       <div className="flex gap-1.5">
-        <div className="w-6 h-6 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center shadow-sm"><CodeFilled className="text-blue-500 text-[11px]" /></div>
-        <div className="w-6 h-6 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center shadow-sm"><FireFilled className="text-orange-500 text-[11px]" /></div>
-        {rank <= 3 && <div className="w-6 h-6 rounded-full bg-yellow-50 border border-yellow-100 flex items-center justify-center shadow-sm"><StarFilled className="text-yellow-500 text-[11px]" /></div>}
-        {rank === 1 && <div className="w-6 h-6 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center shadow-sm"><RocketFilled className="text-purple-500 text-[11px]" /></div>}
-        <div className="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-sm"><CalendarFilled className="text-emerald-500 text-[11px]" /></div>
+        {badges.slice(0, 5).map((badge, idx) => (
+          <div key={idx} title={badge.name} className="w-6 h-6 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center shadow-sm">
+             <StarFilled className="text-blue-500 text-[11px]" />
+          </div>
+        ))}
+        {badges.length > 5 && <div className="text-xs text-slate-400 flex items-center">+{badges.length - 5}</div>}
       </div>
     );
   };
@@ -59,10 +88,10 @@ export default function Leaderboard() {
   const columns = [
     {
       title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest ml-1">Rank</Text>,
-      dataIndex: 'rank',
+      dataIndex: 'globalRank', // using the absolute/global rank if returned
       key: 'rank',
       width: 100,
-      render: (rank) => renderRank(rank),
+      render: (globalRank) => renderRank(globalRank),
     },
     {
       title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest">Student</Text>,
@@ -70,7 +99,7 @@ export default function Leaderboard() {
       key: 'name',
       render: (text, record) => (
         <div className="flex items-center gap-3">
-          <Avatar size="large" icon={<UserOutlined />} className={`${record.isCurrentUser ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'} shadow-sm`} />
+          <Avatar src={record.profileImage} size="large" icon={!record.profileImage && <UserOutlined />} className={`${record.isCurrentUser ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'} shadow-sm`} />
           <Text className={`font-bold text-base ${record.isCurrentUser ? 'text-blue-900' : 'text-slate-900'}`}>{text}</Text>
           {record.isCurrentUser && <Tag color="blue" className="ml-2 border-blue-300 font-bold">You</Tag>}
         </div>
@@ -80,12 +109,13 @@ export default function Leaderboard() {
       title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest">Points</Text>,
       dataIndex: 'points',
       key: 'points',
-      render: (points, record) => <Text className={`${record.isCurrentUser ? 'text-blue-700' : 'text-slate-800'} font-black text-lg`}>{points.toLocaleString()} pts</Text>,
+      render: (points, record) => <Text className={`${record.isCurrentUser ? 'text-blue-700' : 'text-slate-800'} font-black text-lg`}>{(points || 0).toLocaleString()} pts</Text>,
     },
     {
       title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest">Badges Earned</Text>,
+      dataIndex: 'badges',
       key: 'badges',
-      render: (_, record) => renderMiniBadges(record.rank),
+      render: (badges) => renderMiniBadges(badges),
     },
     {
       title: <Text className="text-slate-500 font-bold uppercase text-[11px] tracking-widest">Completed Tasks</Text>,
@@ -110,19 +140,20 @@ export default function Leaderboard() {
               
               {/* Dropdown Filters */}
               <Space wrap size="middle">
-                <Select defaultValue="all" className="w-40 [&>.ant-select-selector]:rounded-lg [&>.ant-select-selector]:border-slate-200 font-bold text-slate-700 shadow-sm">
+                <Select value={college} onChange={setCollege} className="w-40 [&>.ant-select-selector]:rounded-lg [&>.ant-select-selector]:border-slate-200 font-bold text-slate-700 shadow-sm">
                   <Option value="all">All Colleges</Option>
                   <Option value="mit">MIT</Option>
                   <Option value="stanford">Stanford</Option>
                   <Option value="harvard">Harvard</Option>
                 </Select>
-                <Select defaultValue="all" className="w-40 [&>.ant-select-selector]:rounded-lg [&>.ant-select-selector]:border-slate-200 font-bold text-slate-700 shadow-sm">
+                <Select value={department} onChange={setDepartment} className="w-40 [&>.ant-select-selector]:rounded-lg [&>.ant-select-selector]:border-slate-200 font-bold text-slate-700 shadow-sm">
                   <Option value="all">All Departments</Option>
                   <Option value="cs">Computer Science</Option>
                   <Option value="ee">Electrical Eng</Option>
                   <Option value="ds">Data Science</Option>
                 </Select>
-                <Select defaultValue="2025" className="w-32 [&>.ant-select-selector]:rounded-lg [&>.ant-select-selector]:border-slate-200 font-bold text-slate-700 shadow-sm">
+                <Select value={batch} onChange={setBatch} className="w-32 [&>.ant-select-selector]:rounded-lg [&>.ant-select-selector]:border-slate-200 font-bold text-slate-700 shadow-sm">
+                  <Option value="all">All Batches</Option>
                   <Option value="2025">Batch 2025</Option>
                   <Option value="2026">Batch 2026</Option>
                 </Select>
@@ -139,7 +170,7 @@ export default function Leaderboard() {
                 />
                 <Button 
                   icon={<ReloadOutlined />} 
-                  onClick={() => setSearchText('')}
+                  onClick={handleReset}
                   className="rounded-lg border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 font-bold shadow-sm"
                 >
                   Reset
@@ -152,7 +183,8 @@ export default function Leaderboard() {
           <div className="overflow-x-auto">
             <Table 
               columns={columns} 
-              dataSource={leaderboardData} 
+              dataSource={data} 
+              loading={loading}
               pagination={{ pageSize: 8 }}
               rowClassName={(record) => 
                 record.isCurrentUser 
