@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from 'react';
-import { Card, Typography, Avatar, Tag, Button, Row, Col, Space, Divider, Switch, Tooltip } from 'antd';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Card, Typography, Avatar, Tag, Button, Row, Col, Divider, Switch, Tooltip, Spin, Select, message } from 'antd';
 import { 
   GithubOutlined, 
   ClockCircleOutlined, 
@@ -11,13 +12,144 @@ import {
   CheckCircleFilled,
   LinkOutlined,
   SyncOutlined,
-  DisconnectOutlined
+  DisconnectOutlined,
+  SaveOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
+const { Option } = Select;
 
-export default function GithubIntegration() {
-  const [isConnected, setIsConnected] = useState(true);
+function GithubIntegrationContent() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [statusData, setStatusData] = useState(null);
+  const [repositories, setRepositories] = useState([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
+  const [selectedRepo, setSelectedRepo] = useState(null);
+  const [savingRepo, setSavingRepo] = useState(false);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code) {
+      handleOAuthCallback(code);
+    } else {
+      fetchStatus();
+    }
+  }, [searchParams]);
+
+  async function fetchStatus() {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/v1/github/status', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setStatusData(data);
+      setIsConnected(data.isConnected);
+      if (data.repository) {
+        setSelectedRepo(data.repository);
+      }
+      
+      if (data.isConnected) {
+        fetchRepositories();
+      }
+    } catch (error) {
+      console.error("Failed to fetch status:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchRepositories() {
+    setLoadingRepos(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/v1/github/repo', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.repositories) {
+        setRepositories(data.repositories);
+      }
+    } catch (error) {
+      console.error("Failed to fetch repositories:", error);
+    } finally {
+      setLoadingRepos(false);
+    }
+  }
+
+  async function handleOAuthCallback(code) {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/v1/github/auth', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+      if (data.success) {
+        message.success('Successfully connected to GitHub!');
+      } else {
+        message.error(data.message || 'Failed to connect');
+      }
+    } catch (err) {
+      message.error('An error occurred during authentication');
+    } finally {
+      router.replace('/dashboard/github');
+      fetchStatus();
+    }
+  }
+
+  const handleConnect = () => {
+    if (statusData?.clientId) {
+      window.location.href = `https://github.com/login/oauth/authorize?client_id=${statusData.clientId}&scope=repo`;
+    } else {
+      message.error("GitHub Client ID is not configured on the server.");
+    }
+  };
+
+  const handleDisconnect = () => {
+    // In a real app, call a disconnect endpoint. For now, we mock it.
+    message.info('Disconnect functionality is not implemented yet.');
+  };
+
+  const handleSaveRepository = async () => {
+    if (!selectedRepo) return;
+    setSavingRepo(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/v1/github/repo', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ repositoryFullName: selectedRepo })
+      });
+      const data = await res.json();
+      if (data.success) {
+        message.success('Repository linked successfully!');
+        fetchStatus();
+      } else {
+        message.error(data.message || 'Failed to link repository');
+      }
+    } catch (err) {
+      message.error('An error occurred while saving repository');
+    } finally {
+      setSavingRepo(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-[60vh]"><Spin size="large" /></div>;
+  }
 
   return (
     <div className="p-4 md:p-8 space-y-6 bg-blue-50/50 min-h-full">
@@ -28,40 +160,35 @@ export default function GithubIntegration() {
 
       <div className="max-w-5xl mx-auto space-y-6">
         {/* ZONE 1: CONNECTION PROFILE CARD */}
-        <Card className="rounded-2xl border-slate-200 shadow-sm shadow-blue-900/5 bg-white"  styles={{ body: { padding: '32px' } }}>
+        <Card className="rounded-2xl border-slate-200 shadow-sm shadow-blue-900/5 bg-white" styles={{ body: { padding: '32px' } }}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             
             {/* Left Side: Profile Info */}
             <div className="flex items-start gap-5">
               <Avatar 
                 size={72} 
-                src={isConnected ? "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" : null}
+                src={isConnected ? `https://github.com/${statusData?.username}.png` : null}
                 icon={!isConnected && <GithubOutlined />}
-                className={`shadow-md border border-slate-200 ${!isConnected && 'bg-slate-100 text-slate-400'}`} 
+                className={`shadow-md border border-slate-200 ${!isConnected ? 'bg-slate-100 text-slate-400' : ''}`} 
               />
               <div className="space-y-3 mt-1">
                 <div>
                   <Title level={4} className="!text-slate-900 !m-0 flex items-center gap-2">
-                    {isConnected ? 'alex-developer' : 'Not Connected'}
+                    {isConnected ? statusData?.username : 'Not Connected'}
                   </Title>
                   <Text className="text-slate-500 font-medium text-sm">Authenticated User Account</Text>
                 </div>
                 
-                {isConnected && (
+                {isConnected && statusData?.repository && (
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-3">
                       <Text className="text-slate-700 font-bold text-sm">Active Repository:</Text>
-                      <a href="#" className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1">
-                        alex-developer/frontend-ecommerce <LinkOutlined />
+                      <a href={`https://github.com/${statusData.repository}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1">
+                        {statusData.repository} <LinkOutlined />
                       </a>
                       <Tag className="px-2 py-0.5 bg-blue-50 border-blue-200 text-blue-700 font-bold rounded m-0 flex items-center gap-1">
                         <BranchesOutlined /> main
                       </Tag>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 mt-2">
-                      <span className="flex items-center gap-1.5"><ClockCircleOutlined /> Last Commit: 2 hours ago</span>
-                      <span className="flex items-center gap-1.5"><ClockCircleOutlined /> Last Push: Just now</span>
                     </div>
                   </div>
                 )}
@@ -92,7 +219,7 @@ export default function GithubIntegration() {
                 type="default" 
                 size="large"
                 icon={isConnected ? <DisconnectOutlined /> : <GithubOutlined />}
-                onClick={() => setIsConnected(!isConnected)}
+                onClick={isConnected ? handleDisconnect : handleConnect}
                 className={`rounded-xl font-bold border-slate-200 shadow-sm w-full md:w-auto transition-colors ${isConnected ? 'text-slate-700 hover:text-red-600 hover:border-red-200 hover:bg-red-50' : 'bg-slate-900 text-white hover:bg-slate-800 border-slate-900'}`}
               >
                 {isConnected ? 'Disconnect Account' : 'Connect GitHub'}
@@ -104,47 +231,56 @@ export default function GithubIntegration() {
 
         {/* ZONE 2: REPOSITORY META-DETAILS */}
         {isConnected && (
-          <Card className="rounded-2xl border-slate-200 shadow-sm shadow-blue-900/5 bg-white" title={<Text className="text-slate-900 font-bold text-lg flex items-center gap-2" styles={{ body: { padding: '32px' } }}><ApiOutlined className="text-slate-400" /> Repository & Sync Details</Text>}
-            headStyle={{ borderBottom: '1px solid #f1f5f9', padding: '16px 32px', minHeight: 'auto' }}
+          <Card 
+            className="rounded-2xl border-slate-200 shadow-sm shadow-blue-900/5 bg-white" 
+            title={<Text className="text-slate-900 font-bold text-lg flex items-center gap-2"><ApiOutlined className="text-slate-400" /> Repository & Sync Details</Text>}
+            styles={{ header: { borderBottom: '1px solid #f1f5f9', padding: '16px 32px', minHeight: 'auto' }, body: { padding: '32px' } }}
           >
             <Row gutter={[32, 32]}>
               
               {/* Repository Information Grid */}
               <Col xs={24} lg={12} className="space-y-6">
                 <div>
-                  <Text className="text-xs uppercase font-bold text-slate-400 tracking-wider block mb-4">Metadata Overview</Text>
+                  <Text className="text-xs uppercase font-bold text-slate-400 tracking-wider block mb-4">Repository Selection</Text>
                   
                   <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <Text className="text-slate-500 font-bold text-sm">Target Repository</Text>
-                      <Text className="text-slate-900 font-bold">frontend-ecommerce</Text>
-                    </div>
-                    <Divider className="my-0 border-slate-200" />
-                    <div className="flex justify-between items-center">
-                      <Text className="text-slate-500 font-bold text-sm">Visibility Status</Text>
-                      <Tooltip title="This repository is securely locked.">
-                        <Tag className="m-0 bg-white border border-slate-200 text-slate-700 font-bold rounded flex items-center gap-1.5 px-2 py-0.5">
-                          <LockOutlined className="text-slate-400" /> Private
-                        </Tag>
-                      </Tooltip>
-                    </div>
-                    <Divider className="my-0 border-slate-200" />
-                    <div className="flex justify-between items-center">
-                      <Text className="text-slate-500 font-bold text-sm">Default Branch</Text>
-                      <Text className="text-slate-900 font-bold font-mono text-sm bg-white px-2 py-0.5 rounded border border-slate-200">main</Text>
-                    </div>
+                    <Text className="text-slate-500 font-bold text-sm block mb-2">Select your internship repository</Text>
+                    <Select
+                      showSearch
+                      placeholder="Select a repository"
+                      loading={loadingRepos}
+                      className="w-full"
+                      size="large"
+                      value={selectedRepo}
+                      onChange={setSelectedRepo}
+                      filterOption={(input, option) =>
+                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                      }
+                      options={repositories.map(r => ({ label: r.full_name, value: r.full_name }))}
+                    />
+                    
+                    <Button 
+                      type="primary" 
+                      className="w-full mt-2 bg-blue-600 hover:bg-blue-500"
+                      icon={<SaveOutlined />}
+                      onClick={handleSaveRepository}
+                      loading={savingRepo}
+                      disabled={!selectedRepo || selectedRepo === statusData?.repository}
+                    >
+                      Save Active Repository
+                    </Button>
                   </div>
                 </div>
 
                 <div>
-                  <Text className="text-xs uppercase font-bold text-slate-400 tracking-wider block mb-4">Quantitative Statistics</Text>
+                  <Text className="text-xs uppercase font-bold text-slate-400 tracking-wider block mb-4">Repository Stats</Text>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 hover:border-blue-300 transition-colors cursor-default shadow-sm shadow-blue-900/5">
                       <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
                         <BranchesOutlined className="text-blue-600 text-lg" />
                       </div>
                       <div>
-                        <Title level={3} className="!text-slate-900 !m-0 leading-none">142</Title>
+                        <Title level={3} className="!text-slate-900 !m-0 leading-none">?</Title>
                         <Text className="text-slate-500 font-bold text-xs uppercase tracking-wider">Total Commits</Text>
                       </div>
                     </div>
@@ -153,7 +289,7 @@ export default function GithubIntegration() {
                         <UsergroupAddOutlined className="text-purple-600 text-lg" />
                       </div>
                       <div>
-                        <Title level={3} className="!text-slate-900 !m-0 leading-none">3</Title>
+                        <Title level={3} className="!text-slate-900 !m-0 leading-none">?</Title>
                         <Text className="text-slate-500 font-bold text-xs uppercase tracking-wider">Contributors</Text>
                       </div>
                     </div>
@@ -201,7 +337,7 @@ export default function GithubIntegration() {
                           <Text className="text-slate-500 font-medium text-xs">Listening for push events</Text>
                         </div>
                       </div>
-                      <Switch defaultChecked className="bg-emerald-500" />
+                      <Switch defaultChecked={!!statusData?.repository} className="bg-emerald-500" disabled />
                     </div>
                   </div>
 
@@ -212,5 +348,13 @@ export default function GithubIntegration() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function GithubIntegration() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-[60vh]"><Spin size="large" /></div>}>
+      <GithubIntegrationContent />
+    </Suspense>
   );
 }
