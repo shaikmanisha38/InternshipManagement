@@ -174,7 +174,7 @@ export default function MentorCertificates() {
           <div className="flex items-center gap-8">
             <div>
               <h1 className="text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-                <Award className="w-6 h-6 text-amber-500" /> Credentials Console
+                <Award className="w-6 h-6 text-amber-500" /> Certificates Console
               </h1>
               <p className="text-[#475569] text-sm mt-1">Manage and provision official internship certificates.</p>
             </div>

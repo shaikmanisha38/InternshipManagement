@@ -62,11 +62,11 @@ export default function LandingPage() {
                 Find an internship
               </button>
               <button 
-                onClick={() => router.push('/signup?type=employee')}
+                onClick={() => router.push('/signup?type=mentor')}
                 className="flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 glass text-white rounded-xl font-bold hover:bg-white/5 transition-all"
               >
                 <Briefcase className="w-5 h-5" />
-                Hire an intern
+                Become a Mentor
               </button>
             </motion.div>
             

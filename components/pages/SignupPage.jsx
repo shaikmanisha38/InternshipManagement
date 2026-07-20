@@ -17,11 +17,17 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('type') === 'employee') {
-      setUserType('employee');
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('type') === 'mentor') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUserType('mentor');
+      } else if (params.get('type') === 'admin') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUserType('admin');
+      }
     }
-  }, [location]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,7 +42,7 @@ export default function SignupPage() {
           name, 
           email, 
           password, 
-          role: userType === 'employee' ? 'MENTOR' : 'STUDENT'
+          role: userType.toUpperCase()
         }),
       });
 
@@ -86,7 +92,13 @@ export default function SignupPage() {
           <div className="flex bg-black/40 p-1 rounded-xl mb-6">
             <button
               type="button"
-              onClick={() => setUserType('student')}
+              onClick={() => {
+                setUserType('student');
+                setName('');
+                setEmail('');
+                setPassword('');
+                setError('');
+              }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${
                 userType === 'student' ? 'bg-primary text-white shadow-lg' : 'text-textMuted hover:text-white'
               }`}
@@ -96,13 +108,35 @@ export default function SignupPage() {
             </button>
             <button
               type="button"
-              onClick={() => setUserType('employee')}
+              onClick={() => {
+                setUserType('mentor');
+                setName('');
+                setEmail('');
+                setPassword('');
+                setError('');
+              }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${
-                userType === 'employee' ? 'bg-accent text-white shadow-lg' : 'text-textMuted hover:text-white'
+                userType === 'mentor' ? 'bg-accent text-white shadow-lg' : 'text-textMuted hover:text-white'
               }`}
             >
               <Briefcase className="w-4 h-4" />
-              Employee
+              Mentor
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setUserType('admin');
+                setName('');
+                setEmail('');
+                setPassword('');
+                setError('');
+              }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${
+                userType === 'admin' ? 'bg-red-500 text-white shadow-lg' : 'text-textMuted hover:text-white'
+              }`}
+            >
+              <ShieldAlert className="w-4 h-4" />
+              Admin
             </button>
           </div>
 
