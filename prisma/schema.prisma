@@ -301,10 +301,11 @@ model AssessmentSubmission {
 model Attendance {
   id         String   @id @default(uuid())
   studentId  String
-  loginTime  DateTime
+  loginTime  DateTime?
   logoutTime DateTime?
   hoursSpent Float?
   date       DateTime @db.Date
+  status     String   @default("Present")
 
   student    User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 

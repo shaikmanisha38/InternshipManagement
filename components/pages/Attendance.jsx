@@ -1,5 +1,6 @@
-import React from 'react';
-import { Card, Typography, Progress, Table, Tag, Row, Col, Space } from 'antd';
+"use client";
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Progress, Table, Tag, Row, Col, Spin, Alert } from 'antd';
 import { 
   CheckCircleFilled, 
   CloseCircleFilled, 
@@ -12,50 +13,6 @@ import {
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
-
-// Mock Table Data
-const attendanceData = [
-  {
-    key: '1',
-    date: 'Oct 12, 2025',
-    loginTime: '08:55 AM',
-    logoutTime: '05:30 PM',
-    hours: '8.5',
-    status: 'Present',
-  },
-  {
-    key: '2',
-    date: 'Oct 11, 2025',
-    loginTime: '09:15 AM',
-    logoutTime: '06:00 PM',
-    hours: '8.75',
-    status: 'Late',
-  },
-  {
-    key: '3',
-    date: 'Oct 10, 2025',
-    loginTime: '--:--',
-    logoutTime: '--:--',
-    hours: '0',
-    status: 'Absent',
-  },
-  {
-    key: '4',
-    date: 'Oct 09, 2025',
-    loginTime: '08:50 AM',
-    logoutTime: '05:15 PM',
-    hours: '8.4',
-    status: 'Present',
-  },
-  {
-    key: '5',
-    date: 'Oct 08, 2025',
-    loginTime: '09:00 AM',
-    logoutTime: '05:00 PM',
-    hours: '8.0',
-    status: 'Present',
-  },
-];
 
 // Table Columns Configuration
 const columns = [
@@ -76,7 +33,7 @@ const columns = [
     key: 'loginTime',
     render: (text) => (
       <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-        <LoginOutlined className="text-emerald-500" /> {text}
+        <LoginOutlined className="text-emerald-500" /> {text || '--:--'}
       </span>
     ),
   },
@@ -86,7 +43,7 @@ const columns = [
     key: 'logoutTime',
     render: (text) => (
       <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-        <LogoutOutlined className="text-rose-500" /> {text}
+        <LogoutOutlined className="text-rose-500" /> {text || '--:--'}
       </span>
     ),
   },
@@ -96,7 +53,7 @@ const columns = [
     key: 'hours',
     render: (text) => (
       <span className="flex items-center gap-1.5 text-slate-700 font-bold">
-        <ClockCircleOutlined className="text-slate-400" /> {text} Hrs
+        <ClockCircleOutlined className="text-slate-400" /> {text || '0'} Hrs
       </span>
     ),
   },
@@ -121,6 +78,11 @@ const columns = [
         color = 'text-rose-700';
         bg = 'bg-rose-50 border-rose-200';
         icon = <CloseCircleFilled className="text-rose-500" />;
+      } else {
+        // Fallback
+        color = 'text-emerald-700';
+        bg = 'bg-emerald-50 border-emerald-200';
+        icon = <CheckCircleFilled className="text-emerald-500" />;
       }
 
       return (
@@ -133,6 +95,53 @@ const columns = [
 ];
 
 export default function Attendance() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchAttendance() {
+      try {
+        const res = await fetch('/api/v1/attendance/summary');
+        if (!res.ok) {
+           const errData = await res.json().catch(() => ({}));
+           throw new Error(errData.message || 'Failed to fetch attendance data');
+        }
+        const json = await res.json();
+        setData(json);
+      } catch (error) {
+        console.error(error);
+        setError(error.message || 'An unexpected error occurred.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAttendance();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-100px)]">
+        <Spin size="large" tip="Loading Attendance..." />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="p-8">
+        <Alert
+          message="Error Loading Attendance"
+          description={error || "No data received from the server."}
+          type="error"
+          showIcon
+        />
+      </div>
+    );
+  }
+
+  const { summary, history } = data;
+
   return (
     <div className="p-4 md:p-8 space-y-8 bg-blue-50/50 min-h-full">
       
@@ -153,7 +162,7 @@ export default function Attendance() {
               <Text className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4">Overall Attendance</Text>
               <Progress 
                 type="dashboard" 
-                percent={94} 
+                percent={summary.overallPercentage} 
                 strokeColor={{ '0%': '#3b82f6', '100%': '#10b981' }} 
                 strokeWidth={10}
                 size={140}
@@ -178,7 +187,7 @@ export default function Attendance() {
                       <UserSwitchOutlined className="text-blue-600 text-2xl" />
                     </div>
                     <div>
-                      <Title level={1} className="!text-blue-900 !m-0 !font-black !text-5xl">42</Title>
+                      <Title level={1} className="!text-blue-900 !m-0 !font-black !text-5xl">{summary.presentCount}</Title>
                       <Text className="text-blue-600 font-bold text-sm uppercase tracking-wider mt-1 block">Present Days</Text>
                     </div>
                   </div>
@@ -193,7 +202,7 @@ export default function Attendance() {
                       <WarningFilled className="text-amber-500 text-xl" />
                     </div>
                     <div>
-                      <Title level={1} className="!text-amber-900 !m-0 !font-black !text-5xl">3</Title>
+                      <Title level={1} className="!text-amber-900 !m-0 !font-black !text-5xl">{summary.lateCount}</Title>
                       <Text className="text-amber-600 font-bold text-sm uppercase tracking-wider mt-1 block">Late Arrivals</Text>
                     </div>
                   </div>
@@ -208,7 +217,7 @@ export default function Attendance() {
                       <CloseCircleFilled className="text-rose-500 text-xl" />
                     </div>
                     <div>
-                      <Title level={1} className="!text-rose-900 !m-0 !font-black !text-5xl">1</Title>
+                      <Title level={1} className="!text-rose-900 !m-0 !font-black !text-5xl">{summary.absentCount}</Title>
                       <Text className="text-rose-600 font-bold text-sm uppercase tracking-wider mt-1 block">Absent Days</Text>
                     </div>
                   </div>
@@ -227,12 +236,16 @@ export default function Attendance() {
           </div>
           
           <div className="overflow-x-auto">
-            <Table 
-              columns={columns} 
-              dataSource={attendanceData} 
-              pagination={{ pageSize: 5 }}
-              className="[&_.ant-table-thead_th]:bg-white [&_.ant-table-thead_th]:border-b-2 [&_.ant-table-thead_th]:border-slate-100 [&_.ant-table-tbody_td]:border-b [&_.ant-table-tbody_td]:border-slate-50 [&_.ant-table-tbody_tr:hover_td]:bg-blue-50/30 [&_.ant-pagination]:px-6 [&_.ant-pagination]:pb-4"
-            />
+            {history && history.length > 0 ? (
+              <Table 
+                columns={columns} 
+                dataSource={history} 
+                pagination={{ pageSize: 5 }}
+                className="[&_.ant-table-thead_th]:bg-white [&_.ant-table-thead_th]:border-b-2 [&_.ant-table-thead_th]:border-slate-100 [&_.ant-table-tbody_td]:border-b [&_.ant-table-tbody_td]:border-slate-50 [&_.ant-table-tbody_tr:hover_td]:bg-blue-50/30 [&_.ant-pagination]:px-6 [&_.ant-pagination]:pb-4"
+              />
+            ) : (
+              <div className="flex items-center justify-center p-8 text-slate-400">No attendance records found.</div>
+            )}
           </div>
         </Card>
 
