@@ -91,7 +91,7 @@ export async function GET(req: Request) {
     }
 
     // 5. Fetch GitHub Account
-    const githubAccount = await prisma.githubAccount.findFirst({ where: { studentId: userId } });
+    const githubAccount = await prisma.githubAccount.findFirst({ where: { userId: userId } });
     if (githubAccount) {
       dashboardData.githubStatus = {
         isConnected: true,
