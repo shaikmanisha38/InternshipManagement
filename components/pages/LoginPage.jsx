@@ -50,7 +50,7 @@ export default function LoginPage() {
       if (role !== expectedRole) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        throw new Error(Account type mismatch. Please select the  + role.charAt(0) + role.slice(1).toLowerCase() +  tab to log in.);
+        throw new Error(`Account type mismatch. Please select the ${role.charAt(0) + role.slice(1).toLowerCase()} tab to log in.`);
       }
 
       if (role === 'STUDENT') {
@@ -188,7 +188,7 @@ export default function LoginPage() {
                       setPassword('');
                       clearMessages();
                     }}
-                    className={lex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all  + (userType === 'student' ? 'bg-primary text-white shadow-lg' : 'text-textMuted hover:text-white')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${userType === 'student' ? 'bg-primary text-white shadow-lg' : 'text-textMuted hover:text-white'}`}
                   >
                     <GraduationCap className="w-4 h-4" />
                     Student
@@ -201,7 +201,7 @@ export default function LoginPage() {
                       setPassword('');
                       clearMessages();
                     }}
-                    className={lex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all  + (userType === 'mentor' ? 'bg-accent text-white shadow-lg' : 'text-textMuted hover:text-white')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${userType === 'mentor' ? 'bg-accent text-white shadow-lg' : 'text-textMuted hover:text-white'}`}
                   >
                     <Briefcase className="w-4 h-4" />
                     Mentor
@@ -214,7 +214,7 @@ export default function LoginPage() {
                       setPassword('');
                       clearMessages();
                     }}
-                    className={lex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all  + (userType === 'admin' ? 'bg-red-500 text-white shadow-lg' : 'text-textMuted hover:text-white')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${userType === 'admin' ? 'bg-red-500 text-white shadow-lg' : 'text-textMuted hover:text-white'}`}
                   >
                     <Shield className="w-4 h-4" />
                     Admin
