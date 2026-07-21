@@ -15,94 +15,29 @@ export async function GET(req: Request) {
       token = req.headers.get('cookie')?.split('token=')?.[1]?.split(';')?.[0];
     }
 
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    let userId;
-    try {
-      const verified = await jwtVerify(token, secret);
-      userId = verified.payload.userId as string;
-    } catch (e) {
-      return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
-    }
+    const decoded = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+    const userId = (decoded.payload as any).id as string;
 
-    const githubAccount = await prisma.githubAccount.findUnique({
-      where: { userId }
+    const githubAccount = await prisma.githubAccount.findFirst({
+      where: { studentId: userId },
     });
 
-    if (!githubAccount || !githubAccount.isConnected || !githubAccount.accessToken) {
-      return NextResponse.json({ isConnected: false });
+    if (!githubAccount) {
+      return NextResponse.json({ isConnected: false, clientId: process.env.GITHUB_CLIENT_ID });
     }
 
-    const headers = {
-      Authorization: `Bearer ${githubAccount.accessToken}`,
-      Accept: 'application/vnd.github.v3+json'
-    };
-
-    // Get user repos for default repository logic
-    const repoRes = await fetch(`https://api.github.com/user/repos?sort=updated&per_page=1`, { headers });
-    const repos = await repoRes.json();
-    const repo = Array.isArray(repos) && repos.length > 0 ? repos[0] : null;
-
-    if (!repo) {
-      return NextResponse.json({
-        isConnected: true,
-        username: githubAccount.username,
-        repository: null,
-        webhookActive: !!githubAccount.webhookId
-      });
-    }
-
-    // Auto-update default repo in db if none set
-    if (!githubAccount.repository) {
-      await prisma.githubAccount.update({
-        where: { id: githubAccount.id },
-        data: { repository: repo.name, repositoryUrl: repo.html_url }
-      });
-    }
-
-    const repoName = githubAccount.repository || repo.name;
-    const owner = githubAccount.username;
-
-    // Fetch commits
-    const commitsRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/commits?per_page=1`, { headers });
-    const commits = await commitsRes.json();
-    
-    // Fetch commit count from headers (pagination)
-    let totalCommits = 0;
-    const linkHeader = commitsRes.headers.get('link');
-    if (linkHeader) {
-      const match = linkHeader.match(/page=(\d+)>; rel="last"/);
-      if (match) {
-        totalCommits = parseInt(match[1]);
-      }
-    } else if (Array.isArray(commits)) {
-      totalCommits = commits.length;
-    }
-
-    // Fetch contributors
-    const contribRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/contributors`, { headers });
-    const contributors = await contribRes.json();
-    const contributorsCount = Array.isArray(contributors) ? contributors.length : 1;
-
+    // If connected, let's also fetch webhooks or latest commit if possible, but for now just basic details
     return NextResponse.json({
       isConnected: true,
       username: githubAccount.username,
-      avatar: `https://github.com/${githubAccount.username}.png`,
-      repository: repoName,
-      repositoryUrl: githubAccount.repositoryUrl || repo.html_url,
-      isPrivate: repo.private,
-      defaultBranch: repo.default_branch,
-      lastCommitAt: Array.isArray(commits) && commits.length > 0 ? commits[0].commit.author.date : null,
-      totalCommits,
-      contributorsCount,
-      webhookActive: !!githubAccount.webhookId
+      repository: githubAccount.repository,
+      clientId: process.env.GITHUB_CLIENT_ID
+      // We don't send accessToken to frontend
     });
-
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching github status:', error);
-    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

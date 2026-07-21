@@ -21,7 +21,13 @@ export default function DashboardLayout({ role = "student", children }) {
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
-      setUser(JSON.parse(userStr));
+      try {
+        setUser(JSON.parse(userStr));
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+        // Optionally clear it if it's corrupted
+        localStorage.removeItem('user');
+      }
     }
   }, []);
 
@@ -36,30 +42,30 @@ export default function DashboardLayout({ role = "student", children }) {
     switch (role) {
       case 'admin':
         return [
-          { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-          { name: 'Students', path: '/admin/students', icon: Users },
-          { name: 'Mentors', path: '/admin/mentors', icon: UserCheck },
-          { name: 'Projects', path: '/admin/projects', icon: FolderKanban },
-          { name: 'Roadmaps', path: '/admin/roadmaps', icon: Map },
-          { name: 'Task Management', path: '/admin/tasks', icon: ListTodo },
-          { name: 'Certificates', path: '/admin/certificates', icon: Award },
-          { name: 'Analytics', path: '/admin/analytics', icon: PieChart },
-          { name: 'Users', path: '/admin/users', icon: UsersRound },
-          { name: 'Roles', path: '/admin/roles', icon: Shield },
-          { name: 'System Logs', path: '/admin/logs', icon: Terminal },
-          { name: 'Settings', path: '/admin/settings', icon: Settings },
+          { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, group: 'Overview' },
+          { name: 'Students', path: '/admin/students', icon: Users, group: 'User Management' },
+          { name: 'Mentors', path: '/admin/mentors', icon: UserCheck, group: 'User Management' },
+          { name: 'Users', path: '/admin/users', icon: UsersRound, group: 'User Management' },
+          { name: 'Roles', path: '/admin/roles', icon: Shield, group: 'User Management' },
+          { name: 'Projects', path: '/admin/projects', icon: FolderKanban, group: 'System Operations' },
+          { name: 'Roadmaps', path: '/admin/roadmaps', icon: Map, group: 'System Operations' },
+          { name: 'Task Management', path: '/admin/tasks', icon: ListTodo, group: 'System Operations' },
+          { name: 'Certificates', path: '/admin/certificates', icon: Award, group: 'System Operations' },
+          { name: 'Analytics', path: '/admin/analytics', icon: PieChart, group: 'Insights & Settings' },
+          { name: 'System Logs', path: '/admin/logs', icon: Terminal, group: 'Insights & Settings' },
+          { name: 'Settings', path: '/admin/settings', icon: Settings, group: 'Insights & Settings' },
         ];
       case 'mentor':
         return [
-          { name: 'Overview', path: '/mentor', icon: LayoutDashboard },
-          { name: 'Students', path: '/mentor/students', icon: Users },
-          { name: 'Projects', path: '/mentor/projects', icon: FolderKanban },
-          { name: 'Analytics', path: '/mentor/analytics', icon: PieChart },
-          { name: 'Attendance', path: '/mentor/attendance', icon: CalendarDays },
-          { name: 'Assessments', path: '/mentor/assessments', icon: ClipboardCheck },
-          { name: 'Leaderboard', path: '/mentor/leaderboard', icon: Trophy },
-          { name: 'Certificates', path: '/mentor/certificates', icon: Award },
-          { name: 'Reports', path: '/mentor/reports', icon: FileText },
+          { name: 'Overview', path: '/mentor', icon: LayoutDashboard, group: 'Overview' },
+          { name: 'Students', path: '/mentor/students', icon: Users, group: 'Student Management' },
+          { name: 'Projects', path: '/mentor/projects', icon: FolderKanban, group: 'Student Management' },
+          { name: 'Attendance', path: '/mentor/attendance', icon: CalendarDays, group: 'Student Management' },
+          { name: 'Assessments', path: '/mentor/assessments', icon: ClipboardCheck, group: 'Evaluation & Grading' },
+          { name: 'Certificates', path: '/mentor/certificates', icon: Award, group: 'Evaluation & Grading' },
+          { name: 'Reports', path: '/mentor/reports', icon: FileText, group: 'Evaluation & Grading' },
+          { name: 'Leaderboard', path: '/mentor/leaderboard', icon: Trophy, group: 'Performance & Analytics' },
+          { name: 'Analytics', path: '/mentor/analytics', icon: PieChart, group: 'Performance & Analytics' },
         ];
       case 'student':
       default:

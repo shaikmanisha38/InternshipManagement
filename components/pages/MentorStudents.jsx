@@ -358,7 +358,7 @@ export default function MentorStudents() {
                   <Award className="w-8 h-8 text-emerald-500" />
                 </div>
                 <h4 className="font-semibold text-[#0F172A] mb-1">No Certificates Yet</h4>
-                <p className="text-sm text-slate-500">Student must complete the internship roadmap to unlock credentials.</p>
+                <p className="text-sm text-slate-500">Student must complete the internship roadmap to unlock certificates.</p>
               </div>
             </TabPane>
           </Tabs>

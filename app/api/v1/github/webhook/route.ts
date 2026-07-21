@@ -1,115 +1,65 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { jwtVerify } from 'jose';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get('authorization');
-    let token = null;
+    const payload = await req.json();
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-    } else {
-      token = req.headers.get('cookie')?.split('token=')?.[1]?.split(';')?.[0];
+    // Only process push events for now
+    if (!payload.commits || !payload.repository || !payload.sender) {
+      return NextResponse.json({ message: 'Ignored: not a push event or missing data' });
     }
 
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+    const repositoryFullName = payload.repository.full_name;
+    const githubUsername = payload.sender.login;
+    const ref = payload.ref; // e.g. "refs/heads/main"
+    const branch = ref ? ref.replace('refs/heads/', '') : null;
 
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    let userId;
-    try {
-      const verified = await jwtVerify(token, secret);
-      userId = verified.payload.userId as string;
-    } catch (e) {
-      return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const { active } = body;
-
-    const githubAccount = await prisma.githubAccount.findUnique({
-      where: { userId }
+    // 1. Find the student who owns this repository and github username
+    const githubAccount = await prisma.githubAccount.findFirst({
+      where: {
+        repository: repositoryFullName,
+        username: githubUsername,
+      },
     });
 
-    if (!githubAccount || !githubAccount.isConnected || !githubAccount.accessToken) {
-      return NextResponse.json({ message: 'GitHub account not connected.' }, { status: 400 });
+    if (!githubAccount) {
+      return NextResponse.json({ message: 'Ignored: repository or user not linked to any student' });
     }
 
-    if (!githubAccount.repository) {
-      return NextResponse.json({ message: 'No repository selected.' }, { status: 400 });
+    // 2. Find the active PENDING task submission for this student
+    const activeSubmission = await prisma.taskSubmission.findFirst({
+      where: {
+        studentId: githubAccount.studentId,
+        status: 'PENDING',
+      },
+      orderBy: {
+        submittedAt: 'desc',
+      },
+    });
+
+    if (!activeSubmission) {
+      return NextResponse.json({ message: 'Ignored: no active pending task submission found for student' });
     }
 
-    const headers = {
-      Authorization: `Bearer ${githubAccount.accessToken}`,
-      Accept: 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json'
-    };
-
-    const webhookPayloadUrl = process.env.WEBHOOK_PAYLOAD_URL || 'https://example.com/api/v1/github/webhook-receiver';
-
-    if (active) {
-      // Create Webhook
-      if (githubAccount.webhookId) {
-        return NextResponse.json({ success: true, message: 'Webhook already active.' });
-      }
-
-      const createRes = await fetch(`https://api.github.com/repos/${githubAccount.username}/${githubAccount.repository}/hooks`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: 'web',
-          active: true,
-          events: ['push'],
-          config: {
-            url: webhookPayloadUrl,
-            content_type: 'json'
-          }
-        })
+    // 3. Save the commits
+    const commitPromises = payload.commits.map((commit: any) => {
+      return prisma.githubCommit.create({
+        data: {
+          submissionId: activeSubmission.id,
+          commitHash: commit.id,
+          message: commit.message,
+          branch: branch,
+          commitTime: new Date(commit.timestamp),
+        },
       });
+    });
 
-      if (!createRes.ok) {
-        const err = await createRes.json();
-        return NextResponse.json({ message: 'Failed to create webhook on GitHub.', error: err }, { status: 500 });
-      }
+    await Promise.all(commitPromises);
 
-      const hookData = await createRes.json();
-      
-      await prisma.githubAccount.update({
-        where: { userId },
-        data: { webhookId: String(hookData.id) }
-      });
-
-      return NextResponse.json({ success: true, message: 'Webhook activated.' });
-
-    } else {
-      // Delete Webhook
-      if (!githubAccount.webhookId) {
-        return NextResponse.json({ success: true, message: 'Webhook already disabled.' });
-      }
-
-      const deleteRes = await fetch(`https://api.github.com/repos/${githubAccount.username}/${githubAccount.repository}/hooks/${githubAccount.webhookId}`, {
-        method: 'DELETE',
-        headers
-      });
-
-      if (!deleteRes.ok && deleteRes.status !== 404) {
-        return NextResponse.json({ message: 'Failed to delete webhook on GitHub.' }, { status: 500 });
-      }
-
-      await prisma.githubAccount.update({
-        where: { userId },
-        data: { webhookId: null }
-      });
-
-      return NextResponse.json({ success: true, message: 'Webhook deactivated.' });
-    }
-
-  } catch (error: any) {
-    console.error('Error managing github webhook:', error);
-    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, inserted: payload.commits.length });
+  } catch (error) {
+    console.error('Error handling github webhook:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

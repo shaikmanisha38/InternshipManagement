@@ -5,8 +5,8 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 pb-10">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight mb-2">Mentor Dashboard</h1>
-        <p className="text-textMuted">Analytics, attendance, and student cohort performance tracking.</p>
+        <h1 className="text-3xl font-extrabold tracking-tight mb-2">Admin Dashboard</h1>
+        <p className="text-textMuted">Platform overview, user management, and system analytics.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
