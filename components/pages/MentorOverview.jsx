@@ -1,5 +1,6 @@
 import React from 'react';
-import { Progress, Timeline } from 'antd';
+import useSWR from 'swr';
+import { Progress, Timeline, Spin } from 'antd';
 import {
   Users,
   Award,
@@ -14,24 +15,88 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 
-const progressData = [
-  { name: 'Completed', value: 45, color: '#10b981' }, // emerald-500
-  { name: 'In Progress', value: 58, color: '#3b82f6' }, // blue-500
-  { name: 'Inactive', value: 12, color: '#94a3b8' }, // slate-400
-  { name: 'Behind Schedule', value: 9, color: '#f59e0b' }, // amber-500
-];
+const fetcher = (url) => fetch(url, {
+  headers: {
+    // Optionally extract from localStorage or cookies. 
+    // In this project, cookie parsing for JWT is already handled by the backend.
+  }
+}).then(res => res.json());
 
-const weeklyPerformance = [
-  { day: 'Mon', logins: 85, tasks: 42 },
-  { day: 'Tue', logins: 92, tasks: 58 },
-  { day: 'Wed', logins: 88, tasks: 45 },
-  { day: 'Thu', logins: 105, tasks: 72 },
-  { day: 'Fri', logins: 112, tasks: 85 },
-  { day: 'Sat', logins: 45, tasks: 20 },
-  { day: 'Sun', logins: 30, tasks: 15 },
-];
+function timeAgo(dateParam) {
+  if (!dateParam) return '';
+  const date = typeof dateParam === 'object' ? dateParam : new Date(dateParam);
+  const today = new Date();
+  const seconds = Math.round((today - date) / 1000);
+  const minutes = Math.round(seconds / 60);
+  const hours = Math.round(minutes / 60);
+  const days = Math.round(hours / 24);
+
+  if (seconds < 60) return `${seconds} seconds ago`;
+  else if (minutes < 60) return `${minutes} mins ago`;
+  else if (hours < 24) return `${hours} hours ago`;
+  else return `${days} days ago`;
+}
 
 export default function MentorOverview() {
+  const { data: overviewData, error: overviewError, isLoading: isOverviewLoading } = useSWR('/api/v1/mentor/overview', fetcher, {
+    refreshInterval: 10000, // Poll every 10 seconds
+  });
+
+  const { data: trendsData, error: trendsError, isLoading: isTrendsLoading } = useSWR('/api/v1/mentor/activity-trends', fetcher, {
+    refreshInterval: 5000, // Poll every 5 seconds
+  });
+
+  if (isOverviewLoading || isTrendsLoading) {
+    return (
+      <div className="-m-8 p-8 bg-[#F0F4F8] min-h-[calc(100vh-5rem)] flex items-center justify-center">
+        <Spin size="large" tip="Loading Dashboard Metrics..." />
+      </div>
+    );
+  }
+
+  if (overviewError || (overviewData && overviewData.message) || trendsError || (trendsData && trendsData.message)) {
+    const errorMessage = (overviewData?.message) || (trendsData?.message) || 'Error loading dashboard metrics.';
+    return (
+      <div className="-m-8 p-8 bg-[#F0F4F8] min-h-[calc(100vh-5rem)] flex items-center justify-center">
+        <div className="bg-red-50 text-red-500 p-4 rounded-lg border border-red-200 flex items-center gap-3">
+          <AlertCircle />
+          <span>{errorMessage === 'Internal server error' ? 'Database connection failed or internal error occurred.' : errorMessage}</span>
+        </div>
+      </div>
+    );
+  }
+
+  const { metrics, pipeline } = overviewData;
+  const { weeklyPerformance, recentLogs } = trendsData;
+
+  const totalPipeline = pipeline.total || 1; // Prevent division by zero
+  const getPercent = (val) => Math.round((val / totalPipeline) * 100);
+
+  const progressData = [
+    { name: 'Completed', value: pipeline.completed, color: '#10b981' },
+    { name: 'In Progress', value: pipeline.inProgress, color: '#3b82f6' },
+    { name: 'Inactive', value: pipeline.inactive, color: '#94a3b8' },
+    { name: 'Behind Schedule', value: pipeline.behindSchedule, color: '#f59e0b' },
+  ];
+
+  const getTimelineIcon = (type) => {
+    switch(type) {
+      case 'TASK_SUBMISSION': return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+      case 'AI_EVALUATION': return <FileText className="w-4 h-4 text-blue-500" />;
+      case 'CERTIFICATE': return <Award className="w-4 h-4 text-purple-500" />;
+      default: return <Clock className="w-4 h-4 text-amber-500" />;
+    }
+  };
+
+  const getTimelineColor = (type) => {
+    switch(type) {
+      case 'TASK_SUBMISSION': return 'green';
+      case 'AI_EVALUATION': return 'blue';
+      case 'CERTIFICATE': return 'purple';
+      default: return 'orange';
+    }
+  };
+
   return (
     <div className="-m-8 p-8 bg-[#F0F4F8] min-h-[calc(100vh-5rem)] font-sans text-[#0F172A]">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -48,8 +113,8 @@ export default function MentorOverview() {
           <div className="bg-white rounded-xl shadow-sm shadow-blue-900/5 p-6 border border-slate-100 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-[#475569] mb-1">Total Students</p>
-              <h2 className="text-3xl font-extrabold text-[#0F172A]">124</h2>
-              <p className="text-xs font-medium text-blue-600 mt-2 bg-blue-50 px-2 py-1 rounded-md inline-block">118 Active Users</p>
+              <h2 className="text-3xl font-extrabold text-[#0F172A]">{metrics.totalStudents}</h2>
+              <p className="text-xs font-medium text-blue-600 mt-2 bg-blue-50 px-2 py-1 rounded-md inline-block">{metrics.activeUsers} Active Users</p>
             </div>
             <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
               <Users className="w-6 h-6 text-blue-600" />
@@ -60,8 +125,8 @@ export default function MentorOverview() {
           <div className="bg-white rounded-xl shadow-sm shadow-blue-900/5 p-6 border border-slate-100 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-[#475569] mb-1">Completed Internships</p>
-              <h2 className="text-3xl font-extrabold text-[#0F172A]">45</h2>
-              <p className="text-xs font-medium text-emerald-600 mt-2 bg-emerald-50 px-2 py-1 rounded-md inline-block">120 Certificates Issued</p>
+              <h2 className="text-3xl font-extrabold text-[#0F172A]">{metrics.completedInternships}</h2>
+              <p className="text-xs font-medium text-emerald-600 mt-2 bg-emerald-50 px-2 py-1 rounded-md inline-block">{metrics.certificatesIssued} Certificates Issued</p>
             </div>
             <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center">
               <Award className="w-6 h-6 text-emerald-600" />
@@ -72,8 +137,8 @@ export default function MentorOverview() {
           <div className="bg-white rounded-xl shadow-sm shadow-blue-900/5 p-6 border border-slate-100 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-[#475569] mb-1">Pending Reviews</p>
-              <h2 className="text-3xl font-extrabold text-[#0F172A]">18</h2>
-              <p className="text-xs font-medium text-amber-600 mt-2 bg-amber-50 px-2 py-1 rounded-md inline-block">42 Today's Submissions</p>
+              <h2 className="text-3xl font-extrabold text-[#0F172A]">{metrics.pendingReviews}</h2>
+              <p className="text-xs font-medium text-amber-600 mt-2 bg-amber-50 px-2 py-1 rounded-md inline-block">{metrics.todaysSubmissions} Today's Submissions</p>
             </div>
             <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-amber-600" />
@@ -84,8 +149,8 @@ export default function MentorOverview() {
           <div className="bg-white rounded-xl shadow-sm shadow-blue-900/5 p-6 border border-slate-100 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-[#475569] mb-1">Avg AI Score</p>
-              <h2 className="text-3xl font-extrabold text-[#0F172A]">85%</h2>
-              <p className="text-xs font-medium text-blue-600 mt-2 bg-blue-50 px-2 py-1 rounded-md inline-block">92% Avg Attendance</p>
+              <h2 className="text-3xl font-extrabold text-[#0F172A]">{metrics.avgAiScore}%</h2>
+              <p className="text-xs font-medium text-blue-600 mt-2 bg-blue-50 px-2 py-1 rounded-md inline-block">{metrics.avgAttendance}% Avg Attendance</p>
             </div>
             <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-blue-600" />
@@ -102,30 +167,30 @@ export default function MentorOverview() {
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>Completed</span>
-                  <span>45 (36%)</span>
+                  <span>{pipeline.completed} ({getPercent(pipeline.completed)}%)</span>
                 </div>
-                <Progress percent={36} strokeColor="#10b981" showInfo={false} size="default" />
+                <Progress percent={getPercent(pipeline.completed)} strokeColor="#10b981" showInfo={false} size="default" />
               </div>
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>In Progress</span>
-                  <span>58 (47%)</span>
+                  <span>{pipeline.inProgress} ({getPercent(pipeline.inProgress)}%)</span>
                 </div>
-                <Progress percent={47} strokeColor="#3b82f6" showInfo={false} size="default" />
+                <Progress percent={getPercent(pipeline.inProgress)} strokeColor="#3b82f6" showInfo={false} size="default" />
               </div>
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>Inactive</span>
-                  <span>12 (10%)</span>
+                  <span>{pipeline.inactive} ({getPercent(pipeline.inactive)}%)</span>
                 </div>
-                <Progress percent={10} strokeColor="#94a3b8" showInfo={false} size="default" />
+                <Progress percent={getPercent(pipeline.inactive)} strokeColor="#94a3b8" showInfo={false} size="default" />
               </div>
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>Behind Schedule</span>
-                  <span>9 (7%)</span>
+                  <span>{pipeline.behindSchedule} ({getPercent(pipeline.behindSchedule)}%)</span>
                 </div>
-                <Progress percent={7} strokeColor="#f59e0b" showInfo={false} size="default" />
+                <Progress percent={getPercent(pipeline.behindSchedule)} strokeColor="#f59e0b" showInfo={false} size="default" />
               </div>
             </div>
           </div>
@@ -202,60 +267,22 @@ export default function MentorOverview() {
           <div className="lg:col-span-1 bg-white rounded-xl shadow-sm shadow-blue-900/5 p-6 border border-slate-100 overflow-hidden flex flex-col">
             <h3 className="text-lg font-bold text-[#0F172A] mb-6">Recent Activity Logs</h3>
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              <Timeline
-                items={[
-                  {
-                    color: 'green',
-                    dot: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
+              {recentLogs && recentLogs.length > 0 ? (
+                <Timeline
+                  items={recentLogs.map((log) => ({
+                    color: getTimelineColor(log.type),
+                    dot: getTimelineIcon(log.type),
                     content: (
                       <div className="mb-4">
-                        <p className="text-sm font-semibold text-[#0F172A]">Student completed Day 15</p>
-                        <p className="text-xs text-[#64748b]">10 mins ago</p>
+                        <p className="text-sm font-semibold text-[#0F172A]">{log.title}</p>
+                        <p className="text-xs text-[#64748b]">{log.subtitle} • {timeAgo(log.timestamp)}</p>
                       </div>
                     ),
-                  },
-                  {
-                    color: 'blue',
-                    dot: <FileText className="w-4 h-4 text-blue-500" />,
-                    content: (
-                      <div className="mb-4">
-                        <p className="text-sm font-semibold text-[#0F172A]">AI evaluated Submission</p>
-                        <p className="text-xs text-[#64748b]">Score: 92/100 • 25 mins ago</p>
-                      </div>
-                    ),
-                  },
-                  {
-                    color: 'orange',
-                    dot: <Clock className="w-4 h-4 text-amber-500" />,
-                    content: (
-                      <div className="mb-4">
-                        <p className="text-sm font-semibold text-[#0F172A]">Weekly Assessment Published</p>
-                        <p className="text-xs text-[#64748b]">Pending 18 reviews • 1 hour ago</p>
-                      </div>
-                    ),
-                  },
-                  {
-                    color: 'purple',
-                    dot: <Award className="w-4 h-4 text-purple-500" />,
-                    content: (
-                      <div className="mb-4">
-                        <p className="text-sm font-semibold text-[#0F172A]">Certificate Generated</p>
-                        <p className="text-xs text-[#64748b]">For: Alex Johnson • 2 hours ago</p>
-                      </div>
-                    ),
-                  },
-                  {
-                    color: 'green',
-                    dot: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-                    content: (
-                      <div className="mb-4">
-                        <p className="text-sm font-semibold text-[#0F172A]">Student completed Day 14</p>
-                        <p className="text-xs text-[#64748b]">3 hours ago</p>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
+                  }))}
+                />
+              ) : (
+                <div className="text-sm text-slate-500 italic">No recent activity found.</div>
+              )}
             </div>
           </div>
 

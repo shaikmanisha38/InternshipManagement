@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
@@ -53,9 +53,9 @@ model Role {
 }
 
 model User {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   name         String
-  email        String    @unique
+  email        String   @unique
   password     String
   roleId       String
   phone        String?
@@ -63,29 +63,34 @@ model User {
   department   String?
   year         Int?
   profileImage String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  role         Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
   mentoredInternships Internship[] @relation("MentorInternships")
-  
-  studentInternships  StudentInternship[]
-  taskSubmissions     TaskSubmission[]
-  githubAccount       GithubAccount?
+
+  studentInternships    StudentInternship[]
+  taskSubmissions       TaskSubmission[]
+  githubAccount         GithubAccount?
   assessmentSubmissions AssessmentSubmission[]
-  attendance          Attendance[]
-  certificates        Certificate[]
-  studentBadges       StudentBadge[]
-  leaderboard         Leaderboard?
-  notifications       Notification[]
-  activityLogs        ActivityLog[]
+  attendance            Attendance[]
+  certificates          Certificate[]
+  studentBadges         StudentBadge[]
+  leaderboard           Leaderboard?
+  notifications         Notification[]
+  activityLogs          ActivityLog[]
+  mentorProjects        Project[]              @relation("MentorProjects")
+  mentorAssessments     Assessment[]           @relation("MentorAssessments")
+  mentorCertificates    Certificate[]          @relation("MentorCertificates")
+  assignedProjects      ProjectStudent[]
+  taskTrackers          TaskTracker[]
 
   @@map("users")
 }
 
 model Internship {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   title       String
   description String
   duration    String
@@ -93,12 +98,12 @@ model Internship {
   difficulty  String
   mentorId    String?
 
-  companyName String?  @map("company_name")
-  techStack   String[] @map("tech_stack")
-  maxCapacity Int      @default(10) @map("max_capacity")
+  companyName String?                 @map("company_name")
+  techStack   String[]                @map("tech_stack")
+  maxCapacity Int                     @default(10) @map("max_capacity")
   status      InternshipPostingStatus @default(OPEN)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   mentor             User?               @relation("MentorInternships", fields: [mentorId], references: [id], onDelete: Cascade)
   studentInternships StudentInternship[]
@@ -108,32 +113,32 @@ model Internship {
 }
 
 model StudentInternship {
-  id           String   @id @default(uuid())
+  id           String           @id @default(uuid())
   studentId    String
   internshipId String
   startDate    DateTime
   endDate      DateTime?
-  currentWeek  Int      @default(1)
-  currentDay   Int      @default(1)
-  progress     Float    @default(0.0)
+  currentWeek  Int              @default(1)
+  currentDay   Int              @default(1)
+  progress     Float            @default(0.0)
   status       InternshipStatus @default(ONGOING)
 
-  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  internship   Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
 
   @@map("student_internships")
 }
 
 model Roadmap {
-  id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   internshipId String
   weekNumber   Int
   title        String
   description  String?
-  totalDays    Int      @default(7)
+  totalDays    Int     @default(7)
 
-  internship   Internship   @relation(fields: [internshipId], references: [id], onDelete: Cascade)
-  roadmapDays  RoadmapDay[]
+  internship  Internship   @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  roadmapDays RoadmapDay[]
 
   @@map("roadmaps")
 }
@@ -145,41 +150,41 @@ model RoadmapDay {
   title         String
   topicsCovered String[] @default([]) @map("topics_covered")
 
-  roadmap       Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
-  tasks         Task[]
+  roadmap Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  tasks   Task[]
 
   @@index([roadmapId, dayNumber])
   @@map("roadmap_days")
 }
 
 model Task {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   roadmapDayId  String?
   title         String
   description   String
   difficulty    String
   estimatedTime String?
-  unlockOrder   Int      @default(0)
+  unlockOrder   Int       @default(0)
   passingScore  Float?
   deadline      DateTime?
-  isCompleted   Boolean  @default(false)
+  isCompleted   Boolean   @default(false)
   resourceLinks Json?
 
-  roadmapDay    RoadmapDay?       @relation(fields: [roadmapDayId], references: [id], onDelete: Cascade)
-  resources     TaskResource[]
-  submissions   TaskSubmission[]
+  roadmapDay  RoadmapDay?      @relation(fields: [roadmapDayId], references: [id], onDelete: Cascade)
+  resources   TaskResource[]
+  submissions TaskSubmission[]
 
   @@map("tasks")
 }
 
 model TaskResource {
-  id      String       @id @default(uuid())
-  taskId  String
-  title   String
-  type    ResourceType
-  url     String
+  id     String       @id @default(uuid())
+  taskId String
+  title  String
+  type   ResourceType
+  url    String
 
-  task    Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@map("task_resources")
 }
@@ -195,8 +200,8 @@ model TaskSubmission {
   submittedAt   DateTime         @default(now())
   status        SubmissionStatus @default(PENDING)
 
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task          Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task          Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
   githubCommits GithubCommit[]
   aiEvaluation  AiEvaluation?
 
@@ -215,7 +220,7 @@ model GithubAccount {
   webhookId     String?
   updatedAt     DateTime @default(now()) @updatedAt
 
-  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("github_accounts")
 }
@@ -228,23 +233,23 @@ model GithubCommit {
   branch       String?
   verifiedAt   DateTime @default(now())
 
-  submission   TaskSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submission TaskSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   @@map("github_commits")
 }
 
 model AiEvaluation {
-  id            String   @id @default(uuid())
-  submissionId  String   @unique
-  score         Float
-  feedback      String?
-  metrics       Json?
-  suggestions   Json?
-  strengths     Json?
-  weaknesses    Json?
-  evaluatedAt   DateTime @default(now()) @map("createdAt")
+  id           String   @id @default(uuid())
+  submissionId String   @unique
+  score        Float
+  feedback     String?
+  metrics      Json?
+  suggestions  Json?
+  strengths    Json?
+  weaknesses   Json?
+  evaluatedAt  DateTime @default(now()) @map("createdAt")
 
-  submission    TaskSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submission TaskSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   @@map("ai_evaluations")
 }
@@ -260,6 +265,12 @@ model Assessment {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 
+  mentorId       String?
+  status         String   @default("Draft")
+  mcqCount       Int      @default(0)
+  taskCount      Int      @default(0)
+
+  mentor         User?                @relation("MentorAssessments", fields: [mentorId], references: [id], onDelete: Cascade)
   questions      AssessmentQuestion[]
   submissions    AssessmentSubmission[]
 
@@ -275,7 +286,7 @@ model AssessmentQuestion {
   correctAnswer String       @map("answer")
   points        Int          @default(1)
 
-  assessment    Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   @@map("assessment_questions")
 }
@@ -292,44 +303,52 @@ model AssessmentSubmission {
   passed        Boolean  @default(false)
   completedAt   DateTime @default(now()) @map("submittedAt")
 
-  assessment    Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizScore     Float    @default(0)
+  codingScore   Float    @default(0)
+  totalScore    Float    @default(0)
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("assessment_submissions")
 }
 
 model Attendance {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   studentId  String
   loginTime  DateTime?
   logoutTime DateTime?
   hoursSpent Float?
-  date       DateTime @db.Date
-  status     String   @default("Present")
+  date       DateTime  @db.Date
+  status     String    @default("Present")
 
-  student    User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("attendance")
 }
 
 model Certificate {
   id                String   @id @default(uuid())
-  studentId         String   @unique
-  certificateNumber String   @unique
-  certificateUrl    String
-  issuedDate        DateTime @default(now())
-  finalScore        Float
+  studentId         String
+  credentialId      String   @unique @default(uuid())
+  pdfUrl            String?
+  issuedAt          DateTime @default(now())
+  finalScore        Float    @default(0)
+  status            String   @default("NOT_GENERATED")
+  mentorId          String?
 
-  student           User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  mentor  User? @relation("MentorCertificates", fields: [mentorId], references: [id], onDelete: Cascade)
 
+  @@unique([studentId, mentorId])
   @@map("certificates")
 }
 
 model Badge {
-  id          String   @id @default(uuid())
-  badgeName   String   @unique
+  id          String  @id @default(uuid())
+  badgeName   String  @unique
   description String?
-  points      Int      @default(0)
+  points      Int     @default(0)
 
   studentBadges StudentBadge[]
 
@@ -342,8 +361,8 @@ model StudentBadge {
   badgeId   String
   earnedAt  DateTime @default(now())
 
-  student   User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  badge     Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@map("student_badges")
 }
@@ -355,7 +374,7 @@ model Leaderboard {
   rank      Int?
   updatedAt DateTime @updatedAt
 
-  student   User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("leaderboard")
 }
@@ -368,7 +387,7 @@ model Notification {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
@@ -379,7 +398,49 @@ model ActivityLog {
   activity  String
   createdAt DateTime @default(now())
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("activity_logs")
+}
+
+model Project {
+  id            String   @id @default(uuid())
+  title         String
+  durationWeeks Int
+  status        String   @default("Draft")
+  mentorId      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  mentor        User             @relation("MentorProjects", fields: [mentorId], references: [id], onDelete: Cascade)
+  assignedUsers ProjectStudent[]
+  taskTrackers  TaskTracker[]
+
+  @@map("projects")
+}
+
+model ProjectStudent {
+  id         String   @id @default(uuid())
+  projectId  String
+  studentId  String
+  assignedAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, studentId])
+  @@map("project_students")
+}
+
+model TaskTracker {
+  id        String @id @default(uuid())
+  projectId String
+  studentId String
+  progress  Float  @default(0.0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, studentId])
+  @@map("task_trackers")
 }

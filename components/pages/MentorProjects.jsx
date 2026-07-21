@@ -1,67 +1,22 @@
 "use client";
 import React, { useState } from 'react';
 import { 
-  Table, Drawer, Tabs, Tag, Avatar, Progress, Button, Modal, Form, Input, Select, Tooltip 
+  Table, Drawer, Tabs, Tag, Avatar, Progress, Button, Modal, Form, Input, Select, Tooltip, Skeleton, message 
 } from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
 import { 
   Calendar, CheckCircle2, Edit3, Trash2, Plus, FileText, Video, Link as LinkIcon, BookOpen, Clock, Activity, Target
 } from 'lucide-react';
+import useSWR, { mutate } from 'swr';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
 const { TextArea } = Input;
 
-// --- MOCK DATA ---
-const projectData = [
-  {
-    key: '1',
-    name: 'Full Stack E-Commerce Platform',
-    duration: '8 Weeks',
-    students: ['https://i.pravatar.cc/150?u=1', 'https://i.pravatar.cc/150?u=2', 'https://i.pravatar.cc/150?u=3', 'https://i.pravatar.cc/150?u=4'],
-    completion: 65,
-    status: 'Active',
-    difficulty: 'Advanced',
-    techStack: ['React', 'Node.js', 'MongoDB', 'Tailwind'],
-    outcomes: ['Build scalable REST APIs', 'Implement JWT Authentication', 'State management with Redux', 'Deploy to AWS'],
-    mentor: { name: 'Dr. Alan Turing', role: 'Senior Architect', avatar: 'https://i.pravatar.cc/150?u=mentor1' },
-    roadmap: [
-      {
-        week: 1,
-        days: [
-          { day: 1, title: 'Environment Setup', output: 'GitHub Repo Initialized', difficulty: 'Beginner', desc: 'Install Node, React, and setup Tailwind CSS.' },
-          { day: 2, title: 'Database Design', output: 'ERD Diagram', difficulty: 'Intermediate', desc: 'Design the MongoDB schema for Users and Products.' }
-        ]
-      }
-    ]
-  },
-  {
-    key: '2',
-    name: 'Machine Learning Data Pipeline',
-    duration: '6 Weeks',
-    students: ['https://i.pravatar.cc/150?u=5', 'https://i.pravatar.cc/150?u=6'],
-    completion: 10,
-    status: 'Draft',
-    difficulty: 'Intermediate',
-    techStack: ['Python', 'TensorFlow', 'Pandas', 'AWS S3'],
-    outcomes: ['Data cleaning workflows', 'Model training and validation', 'API serving with FastAPI'],
-    mentor: { name: 'Ada Lovelace', role: 'Data Scientist', avatar: 'https://i.pravatar.cc/150?u=mentor2' },
-    roadmap: []
-  },
-  {
-    key: '3',
-    name: 'UI/UX Design System',
-    duration: '4 Weeks',
-    students: ['https://i.pravatar.cc/150?u=7', 'https://i.pravatar.cc/150?u=8', 'https://i.pravatar.cc/150?u=9'],
-    completion: 100,
-    status: 'Completed',
-    difficulty: 'Beginner',
-    techStack: ['Figma', 'Storybook', 'React', 'CSS'],
-    outcomes: ['Component library creation', 'Design token architecture', 'Interactive prototyping'],
-    mentor: { name: 'Steve Jobs', role: 'Design Lead', avatar: 'https://i.pravatar.cc/150?u=mentor3' },
-    roadmap: []
-  }
-];
+const fetcher = (url) => fetch(url).then((res) => {
+  if (!res.ok) throw new Error('Failed to fetch');
+  return res.json();
+});
 
 export default function MentorProjects() {
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -70,20 +25,50 @@ export default function MentorProjects() {
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [submitting, setSubmitting] = useState(false);
+
+  // SWR Fetching
+  const { data: projects, error: projectsError, isLoading: projectsLoading } = useSWR('/api/v1/mentor/projects', fetcher, { refreshInterval: 5000 });
+  const { data: studentsData, isLoading: studentsLoading } = useSWR('/api/v1/mentor/students', fetcher);
+  
+  const studentsList = studentsData?.data || [];
 
   const handleRowClick = (record) => {
     setSelectedProject(record);
     setDrawerVisible(true);
   };
 
-  const openTaskModal = () => {
+  const openProjectModal = () => {
     form.resetFields();
     setModalVisible(true);
   };
 
-  const handleTaskSubmit = (values) => {
-    console.log('New Task:', values);
-    setModalVisible(false);
+  const handleProjectSubmit = async (values) => {
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/v1/mentor/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: values.title,
+          durationWeeks: values.durationWeeks,
+          status: values.status,
+          studentIds: values.studentIds || []
+        }),
+      });
+      if (res.ok) {
+        message.success('Project created successfully');
+        setModalVisible(false);
+        mutate('/api/v1/mentor/projects');
+      } else {
+        const data = await res.json();
+        message.error(data.message || 'Failed to create project');
+      }
+    } catch (err) {
+      message.error('An error occurred');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // --- COLUMNS CONFIGURATION ---
@@ -109,8 +94,10 @@ export default function MentorProjects() {
       key: 'students',
       render: (_, record) => (
         <Avatar.Group maxCount={3} maxStyle={{ color: '#fff', backgroundColor: '#3b82f6' }}>
-          {record.students.map((url, i) => (
-            <Avatar key={i} src={url} />
+          {record.students && record.students.map((student, i) => (
+            <Tooltip title={student.name} key={i}>
+              <Avatar src={student.avatar} />
+            </Tooltip>
           ))}
         </Avatar.Group>
       ),
@@ -140,7 +127,7 @@ export default function MentorProjects() {
         
         return (
           <Tag color={color} className="font-medium rounded-full px-3 py-1 border-0">
-            {status}
+            {status === 'Completed' ? <><CheckCircle2 className="w-3 h-3 inline mr-1" />{status}</> : status}
           </Tag>
         );
       },
@@ -157,23 +144,30 @@ export default function MentorProjects() {
             <h1 className="text-2xl font-bold text-[#0F172A]">Projects Management</h1>
             <p className="text-[#475569]">Design and manage internship tracks and curriculums.</p>
           </div>
-          <Button type="primary" size="large" icon={<Plus className="w-4 h-4" />} className="bg-blue-600 rounded-lg">
+          <Button type="primary" size="large" icon={<Plus className="w-4 h-4" />} className="bg-blue-600 rounded-lg" onClick={openProjectModal}>
             New Project
           </Button>
         </div>
 
         {/* SECTION 1: MASTER PROJECT REPOSITORY */}
         <div className="bg-white rounded-xl shadow-sm shadow-blue-900/5 border border-slate-100 overflow-hidden">
-          <Table 
-            columns={columns} 
-            dataSource={projectData} 
-            pagination={false}
-            onRow={(record) => ({
-              onClick: () => handleRowClick(record),
-              className: 'cursor-pointer hover:bg-slate-50 transition-colors'
-            })}
-            size="large"
-          />
+          {projectsLoading ? (
+             <div className="p-8">
+               <Skeleton active paragraph={{ rows: 5 }} />
+             </div>
+          ) : (
+            <Table 
+              columns={columns} 
+              dataSource={projects} 
+              rowKey="id"
+              pagination={false}
+              onRow={(record) => ({
+                onClick: () => handleRowClick(record),
+                className: 'cursor-pointer hover:bg-slate-50 transition-colors'
+              })}
+              size="large"
+            />
+          )}
         </div>
 
       </div>
@@ -212,168 +206,73 @@ export default function MentorProjects() {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-[#0F172A] mb-2 flex items-center gap-2"><Activity className="w-4 h-4 text-amber-500"/> Difficulty Level</h4>
-                      <Tag color="warning" className="border-0 px-3 py-1 font-semibold rounded-md">{selectedProject.difficulty}</Tag>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-[#0F172A] mb-3">Technology Stack</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProject.techStack.map(tech => (
-                          <Tag key={tech} className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1 rounded-md text-xs font-semibold">
-                            {tech}
-                          </Tag>
-                        ))}
-                      </div>
+                      <Tag color="warning" className="border-0 px-3 py-1 font-semibold rounded-md">Intermediate</Tag>
                     </div>
                   </div>
                   
                   <div className="space-y-6">
-                    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                      <h4 className="text-sm font-bold text-[#0F172A] mb-3">Learning Outcomes</h4>
-                      <ul className="space-y-3">
-                        {selectedProject.outcomes.map((outcome, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm text-[#475569]">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                            <span>{outcome}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
                       <Avatar src={selectedProject.mentor.avatar} size={50} />
                       <div>
                         <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-0.5">Lead Mentor</p>
                         <p className="text-sm font-bold text-[#0F172A]">{selectedProject.mentor.name}</p>
-                        <p className="text-xs text-blue-600">{selectedProject.mentor.role}</p>
+                        <p className="text-xs text-blue-600">Mentor</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-              </div>
-            </TabPane>
-
-            {/* TAB B: INTERACTIVE ROADMAP & DAILY TASK BUILDER */}
-            <TabPane tab="Curriculum & Tasks" key="2">
-              <div className="py-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-lg text-[#0F172A]">Roadmap Builder</h3>
-                  <Button type="primary" className="bg-blue-600 rounded-lg" icon={<Plus className="w-4 h-4" />} onClick={openTaskModal}>
-                    Add Task
-                  </Button>
-                </div>
-
-                {selectedProject.roadmap.length > 0 ? selectedProject.roadmap.map(week => (
-                  <div key={week.week} className="mb-8">
-                    <h4 className="font-extrabold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
-                      Week {week.week}
-                    </h4>
-                    <div className="space-y-4">
-                      {week.days.map(day => (
-                        <div key={day.day} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow group relative">
-                          {/* Task Header */}
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex items-center gap-3">
-                              <span className="bg-slate-100 text-slate-600 font-bold px-3 py-1 rounded-md text-xs">Day {day.day}</span>
-                              <h5 className="font-bold text-[#0F172A] text-base">{day.title}</h5>
-                            </div>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                              <Tooltip title="Edit Task">
-                                <Button size="small" type="text" icon={<Edit3 className="w-4 h-4 text-slate-500" />} />
-                              </Tooltip>
-                              <Tooltip title="Delete Task">
-                                <Button size="small" type="text" danger icon={<Trash2 className="w-4 h-4" />} />
-                              </Tooltip>
-                            </div>
-                          </div>
-                          
-                          {/* Task Description & Output */}
-                          <p className="text-sm text-[#475569] mb-4">{day.desc}</p>
-                          <div className="flex items-center gap-4 text-xs font-medium bg-slate-50 p-3 rounded-lg border border-slate-100">
-                            <span className="flex items-center gap-1 text-[#0F172A]"><Target className="w-4 h-4 text-blue-500"/> Output: {day.output}</span>
-                            <span className="text-slate-300">|</span>
-                            <span className="text-amber-600">Difficulty: {day.difficulty}</span>
-                          </div>
-
-                          {/* Upload Resources Panel */}
-                          <div className="mt-4 pt-4 border-t border-slate-100">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Attached Resources</p>
-                            <div className="flex gap-3">
-                              <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer hover:bg-blue-100 transition-colors">
-                                <Video className="w-4 h-4" /> Walkthrough.mp4
-                              </div>
-                              <div className="flex items-center gap-2 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer hover:bg-slate-200 transition-colors">
-                                <GithubOutlined className="w-4 h-4" /> Repository
-                              </div>
-                              <div className="flex items-center gap-2 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer hover:bg-slate-200 transition-colors">
-                                <BookOpen className="w-4 h-4" /> Docs.pdf
-                              </div>
-                              <div className="flex items-center gap-2 bg-slate-100 text-slate-400 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border border-dashed border-slate-300 hover:border-blue-400 hover:text-blue-500 transition-colors">
-                                <Plus className="w-4 h-4" /> Add Resource
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )) : (
-                  <div className="text-center py-12 bg-white rounded-xl border border-slate-200 border-dashed">
-                    <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <h3 className="text-[#0F172A] font-bold">No tasks created yet</h3>
-                    <p className="text-slate-500 text-sm mb-4">Start building your roadmap by adding a new daily task.</p>
-                    <Button type="primary" className="bg-blue-600 rounded-lg" onClick={openTaskModal}>Add First Task</Button>
-                  </div>
-                )}
               </div>
             </TabPane>
           </Tabs>
         )}
       </Drawer>
 
-      {/* TASK CREATE/EDIT MODAL */}
+      {/* PROJECT CREATE MODAL */}
       <Modal
-        title={<span className="text-[#0F172A] font-bold">Create New Task</span>}
+        title={<span className="text-[#0F172A] font-bold">Create New Project</span>}
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
         width={600}
       >
-        <Form form={form} layout="vertical" onFinish={handleTaskSubmit} className="mt-4">
+        <Form form={form} layout="vertical" onFinish={handleProjectSubmit} className="mt-4">
+          <Form.Item name="title" label="Project Title / Name" rules={[{ required: true }]}>
+            <Input placeholder="e.g. Full Stack E-Commerce Platform" size="large" />
+          </Form.Item>
           <div className="grid grid-cols-2 gap-4">
-            <Form.Item name="week" label="Week Number" rules={[{ required: true }]}>
-              <Select placeholder="Select Week" size="large">
-                <Option value={1}>Week 1</Option>
-                <Option value={2}>Week 2</Option>
+            <Form.Item name="durationWeeks" label="Duration (Weeks)" rules={[{ required: true }]}>
+              <Select placeholder="Select Duration" size="large">
+                <Option value="4">4 Weeks</Option>
+                <Option value="6">6 Weeks</Option>
+                <Option value="8">8 Weeks</Option>
+                <Option value="12">12 Weeks</Option>
               </Select>
             </Form.Item>
-            <Form.Item name="day" label="Day Number" rules={[{ required: true }]}>
-              <Select placeholder="Select Day" size="large">
-                <Option value={1}>Day 1</Option>
-                <Option value={2}>Day 2</Option>
+            <Form.Item name="status" label="Status" rules={[{ required: true }]}>
+              <Select placeholder="Select Status" size="large">
+                <Option value="Active">Active</Option>
+                <Option value="Draft">Draft</Option>
+                <Option value="Completed">Completed</Option>
               </Select>
             </Form.Item>
           </div>
-          <Form.Item name="title" label="Task Title" rules={[{ required: true }]}>
-            <Input placeholder="e.g. Initialize GitHub Repository" size="large" />
+          <Form.Item name="studentIds" label="Cohort Assignment (Select Students)">
+            <Select 
+              mode="multiple" 
+              placeholder="Assign students to this track" 
+              size="large"
+              loading={studentsLoading}
+              optionFilterProp="children"
+            >
+              {studentsList.map(s => (
+                <Option key={s.studentId} value={s.studentId}>{s.name} ({s.email})</Option>
+              ))}
+            </Select>
           </Form.Item>
-          <Form.Item name="desc" label="Task Description">
-            <TextArea rows={4} placeholder="Detailed instructions for the intern..." />
-          </Form.Item>
-          <div className="grid grid-cols-2 gap-4">
-            <Form.Item name="output" label="Expected Output" rules={[{ required: true }]}>
-              <Input placeholder="e.g. GitHub URL" size="large" />
-            </Form.Item>
-            <Form.Item name="difficulty" label="Difficulty Level">
-              <Select placeholder="Select Level" size="large">
-                <Option value="Beginner">Beginner</Option>
-                <Option value="Intermediate">Intermediate</Option>
-                <Option value="Advanced">Advanced</Option>
-              </Select>
-            </Form.Item>
-          </div>
           <Form.Item className="mb-0 flex justify-end">
             <Button onClick={() => setModalVisible(false)} className="mr-3">Cancel</Button>
-            <Button type="primary" htmlType="submit" className="bg-blue-600">Save Task</Button>
+            <Button type="primary" htmlType="submit" className="bg-blue-600" loading={submitting}>Create Project</Button>
           </Form.Item>
         </Form>
       </Modal>

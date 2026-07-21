@@ -1,53 +1,114 @@
-import React from 'react';
+"use client";
+import React, { useState } from 'react';
 import { 
-  Card, Button, Select, Checkbox, Progress, Tag 
+  Card, Button, Select, Checkbox, Progress, Tag, message, Spin, Empty 
 } from 'antd';
 import { 
   FileSpreadsheet, FileText, Download, TrendingUp, Clock, CheckCircle2, 
   BrainCircuit, Layout, UserSearch, Target, Users, AlertCircle, Award
 } from 'lucide-react';
+import useSWR from 'swr';
 
 const { Option } = Select;
 
+const fetcher = (url) => fetch(url).then((res) => {
+  if (!res.ok) throw new Error('Failed to fetch');
+  return res.json();
+});
+
 export default function MentorReports() {
-  
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedVectors, setSelectedVectors] = useState([]);
+  const [generatingCustom, setGeneratingCustom] = useState(false);
+
+  // SWR for students list
+  const { data: studentsData, isLoading: studentsLoading } = useSWR('/api/v1/mentor/students', fetcher);
+  const studentsList = studentsData?.data || [];
+
+  // SWR for weekly snapshot
+  const { data: snapshotData, isLoading: snapshotLoading } = useSWR('/api/v1/mentor/reports/snapshot', fetcher, { refreshInterval: 5000 });
+
   const reportTypes = [
     {
-      id: 1,
+      id: 'student-progress',
       title: 'Student Progress',
       desc: 'Overall completion tracking logs',
       icon: <TrendingUp className="w-5 h-5 text-blue-500" />,
       color: 'blue'
     },
     {
-      id: 2,
+      id: 'attendance',
       title: 'Attendance Report',
       desc: 'Clock-in and active hours matrices',
       icon: <Clock className="w-5 h-5 text-emerald-500" />,
       color: 'emerald'
     },
     {
-      id: 3,
+      id: 'assessments',
       title: 'Assessment Report',
       desc: 'Quiz marks and code execution ratings',
       icon: <CheckCircle2 className="w-5 h-5 text-indigo-500" />,
       color: 'indigo'
     },
     {
-      id: 4,
+      id: 'ai-performance',
       title: 'AI Performance',
       desc: 'Qualitative automated feedback aggregates',
       icon: <BrainCircuit className="w-5 h-5 text-purple-500" />,
       color: 'purple'
     },
     {
-      id: 5,
+      id: 'projects',
       title: 'Project Completion',
       desc: 'Internship milestone data tracks',
       icon: <Layout className="w-5 h-5 text-amber-500" />,
       color: 'amber'
     }
   ];
+
+  const handleExport = (type, format) => {
+    window.open(`/api/v1/mentor/reports/export?type=${type}&format=${format}`, '_blank');
+  };
+
+  const handleGenerateCustom = async () => {
+    if (!selectedStudent) {
+      return message.error('Please select a student first');
+    }
+    if (selectedVectors.length === 0) {
+      return message.error('Please select at least one data vector');
+    }
+
+    setGeneratingCustom(true);
+    try {
+      const res = await fetch('/api/v1/mentor/reports/custom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: selectedStudent,
+          vectors: selectedVectors
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to generate report');
+      
+      const data = await res.json();
+      
+      // Create a downloadable JSON file
+      const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `custom_report_${selectedStudent}.json`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      message.success('Custom report generated successfully');
+    } catch (err) {
+      message.error('An error occurred while generating the report');
+    } finally {
+      setGeneratingCustom(false);
+    }
+  };
 
   return (
     <div className="-m-8 p-8 bg-[#F0F4F8] min-h-[calc(100vh-5rem)] font-sans text-[#0F172A]">
@@ -77,14 +138,11 @@ export default function MentorReports() {
                 <div className="bg-slate-50 border-t border-slate-100 p-2 flex justify-between items-center px-4">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Export As:</span>
                   <div className="flex gap-1">
-                    <Button type="text" size="small" className="text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 font-bold text-[10px] px-2 h-6" icon={<FileSpreadsheet className="w-3 h-3" />}>
+                    <Button onClick={() => handleExport(report.id, 'xlsx')} type="text" size="small" className="text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 font-bold text-[10px] px-2 h-6" icon={<FileSpreadsheet className="w-3 h-3" />}>
                       XLSX
                     </Button>
-                    <Button type="text" size="small" className="text-slate-600 hover:bg-slate-200 hover:text-slate-700 font-bold text-[10px] px-2 h-6" icon={<FileText className="w-3 h-3" />}>
+                    <Button onClick={() => handleExport(report.id, 'csv')} type="text" size="small" className="text-slate-600 hover:bg-slate-200 hover:text-slate-700 font-bold text-[10px] px-2 h-6" icon={<FileText className="w-3 h-3" />}>
                       CSV
-                    </Button>
-                    <Button type="text" size="small" className="text-red-600 hover:bg-red-100 hover:text-red-700 font-bold text-[10px] px-2 h-6" icon={<Download className="w-3 h-3" />}>
-                      PDF
                     </Button>
                   </div>
                 </div>
@@ -110,18 +168,17 @@ export default function MentorReports() {
                   placeholder="Search by name, email, or ID..."
                   size="large"
                   className="w-full"
+                  loading={studentsLoading}
+                  value={selectedStudent}
+                  onChange={setSelectedStudent}
                   filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                  options={[
-                    { value: '1', label: 'Alexandra Smith (alexandra.s@university.edu)' },
-                    { value: '2', label: 'David Chen (david.c@university.edu)' },
-                    { value: '3', label: 'Maria Garcia (maria.g@university.edu)' },
-                  ]}
+                  options={studentsList.map(s => ({ value: s.studentId, label: `${s.name} (${s.email})` }))}
                 />
               </div>
 
               <div className="mb-8 flex-1">
                 <label className="block text-sm font-bold text-[#334155] mb-4">Select Data Vectors</label>
-                <Checkbox.Group className="w-full flex flex-col gap-3">
+                <Checkbox.Group className="w-full flex flex-col gap-3" value={selectedVectors} onChange={setSelectedVectors}>
                   <div className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
                     <Checkbox value="profile" className="font-semibold text-[#0F172A]">
                       Profile Overview & Final Score <span className="block text-xs font-normal text-[#475569] mt-0.5 ml-6">Primary student identity markers and aggregate grade.</span>
@@ -134,23 +191,26 @@ export default function MentorReports() {
                   </div>
                   <div className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
                     <Checkbox value="progress" className="font-semibold text-[#0F172A]">
-                      Progress Track, Assessment Scores, & AI Feedback <span className="block text-xs font-normal text-[#475569] mt-0.5 ml-6">Comprehensive developmental data and qualitative AI insights.</span>
+                      AI Feedback Diagnostics & Assessment Breakdown <span className="block text-xs font-normal text-[#475569] mt-0.5 ml-6">Granular code review notes and quiz results.</span>
                     </Checkbox>
                   </div>
                 </Checkbox.Group>
               </div>
 
-              <Button type="primary" size="large" className="bg-blue-600 w-full h-12 font-bold text-base shadow-md shadow-blue-600/20" icon={<FileText className="w-5 h-5" />}>
-                Generate Custom Student Report
+              <Button onClick={handleGenerateCustom} loading={generatingCustom} type="primary" size="large" className="bg-blue-600 w-full h-12 font-bold text-base shadow-md shadow-blue-600/20" icon={<FileText className="w-5 h-5" />}>
+                Generate Custom JSON Report
               </Button>
             </div>
           </div>
 
           {/* MODULE 3: SYSTEMIC WEEKLY SNAPSHOT AUDIT */}
           <div className="lg:col-span-1 bg-white rounded-xl shadow-sm shadow-blue-900/5 border border-slate-100 flex flex-col">
-            <div className="p-6 border-b border-slate-100 bg-slate-50 rounded-t-xl">
-              <h2 className="font-bold text-lg text-[#0F172A]">Weekly Snapshot Summary</h2>
-              <p className="text-xs text-[#475569] mt-1">Live systemic performance cycle audit.</p>
+            <div className="p-6 border-b border-slate-100 bg-slate-50 rounded-t-xl flex justify-between items-center">
+              <div>
+                <h2 className="font-bold text-lg text-[#0F172A]">Weekly Snapshot Summary</h2>
+                <p className="text-xs text-[#475569] mt-1">Live systemic performance cycle audit.</p>
+              </div>
+              {snapshotLoading && <Spin size="small" />}
             </div>
             
             <div className="p-6 flex-1 flex flex-col gap-6">
@@ -160,10 +220,10 @@ export default function MentorReports() {
                   <CheckCircle2 className="w-4 h-4 text-blue-500" /> Tasks Completed
                 </p>
                 <div className="flex justify-between items-end mb-1">
-                  <span className="font-extrabold text-[#0F172A] text-xl">142</span>
-                  <span className="text-sm font-semibold text-slate-400">/ 200 This Week</span>
+                  <span className="font-extrabold text-[#0F172A] text-xl">{snapshotData?.tasksCompleted || 0}</span>
+                  <span className="text-sm font-semibold text-slate-400">/ {snapshotData?.tasksTarget || 200} This Week</span>
                 </div>
-                <Progress percent={71} showInfo={false} strokeColor="#3b82f6" />
+                <Progress percent={Math.round(((snapshotData?.tasksCompleted || 0)/(snapshotData?.tasksTarget || 200))*100)} showInfo={false} strokeColor="#3b82f6" />
               </div>
 
               <div>
@@ -171,7 +231,7 @@ export default function MentorReports() {
                   <Users className="w-4 h-4 text-emerald-500" /> Students Active
                 </p>
                 <div className="flex items-center gap-3">
-                  <span className="font-extrabold text-[#0F172A] text-2xl">245</span>
+                  <span className="font-extrabold text-[#0F172A] text-2xl">{snapshotData?.studentsActive || 0}</span>
                   <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Current Session</span>
                 </div>
               </div>
@@ -181,7 +241,7 @@ export default function MentorReports() {
                   <AlertCircle className="w-4 h-4 text-amber-500" /> Pending Reviews
                 </p>
                 <div className="bg-amber-50 border border-amber-100 p-3 rounded-lg flex justify-between items-center">
-                  <span className="font-extrabold text-amber-600 text-xl">38</span>
+                  <span className="font-extrabold text-amber-600 text-xl">{snapshotData?.pendingReviews || 0}</span>
                   <span className="text-xs font-bold text-amber-700">Immediate Action Required</span>
                 </div>
               </div>
@@ -191,16 +251,10 @@ export default function MentorReports() {
                   <Award className="w-4 h-4 text-emerald-500" /> Certificates Issued
                 </p>
                 <Tag color="success" className="bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1.5 rounded-full font-bold text-sm m-0">
-                  12 Completions This Week
+                  {snapshotData?.certificatesIssued || 0} Completions This Week
                 </Tag>
               </div>
 
-            </div>
-
-            <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-xl">
-              <Button type="default" size="large" className="w-full font-semibold text-[#334155] border-slate-300 hover:border-blue-400 hover:text-blue-600" icon={<Download className="w-4 h-4" />}>
-                Export Weekly System Summary
-              </Button>
             </div>
           </div>
 

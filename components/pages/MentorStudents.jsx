@@ -1,98 +1,47 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import useSWR from 'swr';
 import { 
-  Card, Input, Select, Table, Drawer, Tabs, Button, Tag, Avatar, Progress, Space 
+  Card, Input, Select, Table, Drawer, Tabs, Button, Tag, Avatar, Progress, Spin
 } from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
 import { 
-  Search, Download, CheckCircle, XCircle, AlertTriangle, FileText, Send
+  Search, Download, CheckCircle, XCircle, AlertTriangle, FileText, Send, Award
 } from 'lucide-react';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-// --- MOCK DATA ---
-const studentData = [
-  {
-    key: '1',
-    name: 'Emily Chen',
-    email: 'emily.chen@university.edu',
-    avatar: 'https://i.pravatar.cc/150?u=emily',
-    college: 'State Tech University',
-    department: 'Computer Science',
-    week: 4,
-    day: 18,
-    progress: 75,
-    attendance: 92,
-    aiScore: 88,
-    status: 'Active',
-    github: 'emilyc-dev'
-  },
-  {
-    key: '2',
-    name: 'Marcus Johnson',
-    email: 'mjohnson99@college.edu',
-    avatar: 'https://i.pravatar.cc/150?u=marcus',
-    college: 'National Institute',
-    department: 'Information Tech',
-    week: 3,
-    day: 14,
-    progress: 45,
-    attendance: 65,
-    aiScore: 72,
-    status: 'Behind Schedule',
-    github: 'marcus-j-codes'
-  },
-  {
-    key: '3',
-    name: 'Sarah Williams',
-    email: 'swilliams@tech.edu',
-    avatar: 'https://i.pravatar.cc/150?u=sarah',
-    college: 'Global Engineering',
-    department: 'Software Eng',
-    week: 5,
-    day: 25,
-    progress: 100,
-    attendance: 98,
-    aiScore: 95,
-    status: 'Completed',
-    github: 'sarah-w-eng'
-  },
-  {
-    key: '4',
-    name: 'David Kim',
-    email: 'dkim@university.edu',
-    avatar: 'https://i.pravatar.cc/150?u=david',
-    college: 'State Tech University',
-    department: 'Computer Science',
-    week: 2,
-    day: 10,
-    progress: 20,
-    attendance: 15,
-    aiScore: 40,
-    status: 'Inactive',
-    github: 'dkim-student'
-  },
-  {
-    key: '5',
-    name: 'Priya Patel',
-    email: 'ppatel@institute.edu',
-    avatar: 'https://i.pravatar.cc/150?u=priya',
-    college: 'National Institute',
-    department: 'Data Science',
-    week: 4,
-    day: 20,
-    progress: 80,
-    attendance: 95,
-    aiScore: 91,
-    status: 'Active',
-    github: 'priya-data'
+const fetcher = (url) => fetch(url, {
+  headers: {
+    // Optionally extract from localStorage or cookies. 
+    // In this project, cookie parsing for JWT is already handled by the backend.
   }
-];
+}).then(res => res.json());
 
 export default function MentorStudents() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  
+  // Filtering States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [batchFilter, setBatchFilter] = useState('all');
+  const [deptFilter, setDeptFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Build SWR URL with query parameters
+  const apiUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.append('search', searchQuery);
+    if (batchFilter !== 'all') params.append('batch', batchFilter);
+    if (deptFilter !== 'all') params.append('dept', deptFilter);
+    if (statusFilter !== 'all') params.append('status', statusFilter);
+    return `/api/v1/mentor/students?${params.toString()}`;
+  }, [searchQuery, batchFilter, deptFilter, statusFilter]);
+
+  const { data, error, isLoading } = useSWR(apiUrl, fetcher, {
+    refreshInterval: 10000, // Poll every 10 seconds
+  });
 
   const handleRowClick = (record) => {
     setSelectedStudent(record);
@@ -127,7 +76,7 @@ export default function MentorStudents() {
       render: (_, record) => (
         <div>
           <div className="text-sm font-semibold text-[#334155]">{record.college}</div>
-          <div className="text-xs text-[#64748b]">{record.department}</div>
+          <div className="text-xs text-[#64748b]">{record.department} {record.year ? `(Batch ${record.year})` : ''}</div>
         </div>
       ),
     },
@@ -146,14 +95,14 @@ export default function MentorStudents() {
       render: (_, record) => (
         <div className="min-w-[150px]">
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-[#64748b]">Prog: {record.progress}%</span>
+            <span className="text-[#64748b]">Prog: {Math.round(record.progress)}%</span>
             <span className="text-[#64748b]">Att: {record.attendance}%</span>
           </div>
           <Progress 
             percent={record.progress} 
             showInfo={false} 
             size="small" 
-            strokeColor={record.progress === 100 ? '#10b981' : '#3b82f6'} 
+            strokeColor={record.progress === 100 ? '#10b981' : (record.status === 'Behind Schedule' ? '#f59e0b' : '#3b82f6')} 
           />
           <div className="mt-1 text-xs font-semibold text-[#0F172A]">
             AI Score: <span className="text-blue-600 bg-blue-50 px-1 py-0.5 rounded">{record.aiScore}</span>
@@ -199,23 +148,48 @@ export default function MentorStudents() {
                 placeholder="Search Student by Name or Email..." 
                 size="large"
                 className="rounded-lg"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <div className="flex flex-wrap gap-3">
-              <Select defaultValue="all" size="large" className="w-32" popupMatchSelectWidth={false}>
+              <Select 
+                value={batchFilter} 
+                onChange={setBatchFilter} 
+                size="large" 
+                className="w-32" 
+                popupMatchSelectWidth={false}
+              >
                 <Option value="all">All Batches</Option>
-                <Option value="b1">Batch 2024-A</Option>
-                <Option value="b2">Batch 2024-B</Option>
+                <Option value="2024">Batch 2024</Option>
+                <Option value="2025">Batch 2025</Option>
+                <Option value="2026">Batch 2026</Option>
+                <Option value="2027">Batch 2027</Option>
               </Select>
-              <Select defaultValue="all" size="large" className="w-36" popupMatchSelectWidth={false}>
+              <Select 
+                value={deptFilter} 
+                onChange={setDeptFilter} 
+                size="large" 
+                className="w-44" 
+                popupMatchSelectWidth={false}
+              >
                 <Option value="all">All Depts</Option>
-                <Option value="cs">Computer Science</Option>
-                <Option value="it">Information Tech</Option>
+                <Option value="Computer Science">Computer Science</Option>
+                <Option value="Information Tech">Information Tech</Option>
+                <Option value="Software Eng">Software Engineering</Option>
+                <Option value="Data Science">Data Science</Option>
               </Select>
-              <Select defaultValue="all" size="large" className="w-32" popupMatchSelectWidth={false}>
+              <Select 
+                value={statusFilter} 
+                onChange={setStatusFilter} 
+                size="large" 
+                className="w-36" 
+                popupMatchSelectWidth={false}
+              >
                 <Option value="all">Any Status</Option>
                 <Option value="active">Active</Option>
                 <Option value="behind">Behind Schedule</Option>
+                <Option value="completed">Completed</Option>
                 <Option value="inactive">Inactive</Option>
               </Select>
             </div>
@@ -223,17 +197,25 @@ export default function MentorStudents() {
         </Card>
 
         {/* ZONE 2: MASTER STUDENT DIRECTORY */}
-        <Card className="rounded-xl shadow-sm shadow-blue-900/5 border border-slate-100 overflow-hidden"  styles={{ body: { padding: 0 } }}>
-          <Table 
-            columns={columns} 
-            dataSource={studentData} 
-            pagination={{ pageSize: 10, position: ['bottomCenter'] }}
-            onRow={(record) => ({
-              onClick: () => handleRowClick(record),
-              className: 'cursor-pointer hover:bg-slate-50 transition-colors'
-            })}
-            size="large"
-          />
+        <Card className="rounded-xl shadow-sm shadow-blue-900/5 border border-slate-100 overflow-hidden min-h-[400px]"  styles={{ body: { padding: 0 } }}>
+          {error || (data && data.message) ? (
+             <div className="p-8 text-center text-red-500 font-medium flex flex-col items-center justify-center">
+               <AlertTriangle className="w-8 h-8 mb-2" />
+               Failed to load students. You may not be authorized.
+             </div>
+          ) : (
+            <Table 
+              columns={columns} 
+              dataSource={data ? data.data : []} 
+              loading={{ indicator: <Spin size="large" />, spinning: isLoading }}
+              pagination={{ pageSize: 10, position: ['bottomCenter'] }}
+              onRow={(record) => ({
+                onClick: () => handleRowClick(record),
+                className: 'cursor-pointer hover:bg-slate-50 transition-colors'
+              })}
+              size="large"
+            />
+          )}
         </Card>
 
       </div>
@@ -289,9 +271,13 @@ export default function MentorStudents() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">GitHub Profile</p>
-                    <a href="#" className="text-sm font-medium text-blue-600 flex items-center gap-2 hover:underline">
-                      <GithubOutlined className="w-4 h-4" /> @{selectedStudent.github}
-                    </a>
+                    {selectedStudent.github ? (
+                      <a href={`https://github.com/${selectedStudent.github}`} target="_blank" rel="noreferrer" className="text-sm font-medium text-blue-600 flex items-center gap-2 hover:underline">
+                        <GithubOutlined className="w-4 h-4" /> @{selectedStudent.github}
+                      </a>
+                    ) : (
+                      <span className="text-sm text-slate-500">Not Connected</span>
+                    )}
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">College</p>
@@ -310,11 +296,11 @@ export default function MentorStudents() {
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-emerald-100 text-emerald-600' : i === 3 ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300' : 'bg-slate-100 text-slate-400'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${selectedStudent.week > i+1 ? 'bg-emerald-100 text-emerald-600' : selectedStudent.week === i+1 ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300' : 'bg-slate-100 text-slate-400'}`}>
                         W{i+1}
                       </div>
                       <div className="flex-1 p-3 border border-slate-100 rounded-lg bg-slate-50">
-                        <p className="text-sm font-medium text-[#0F172A]">Module {i+1} {i < 3 ? '(Completed)' : i === 3 ? '(In Progress)' : '(Locked)'}</p>
+                        <p className="text-sm font-medium text-[#0F172A]">Module {i+1} {selectedStudent.week > i+1 ? '(Completed)' : selectedStudent.week === i+1 ? '(In Progress)' : '(Locked)'}</p>
                       </div>
                     </div>
                   ))}
@@ -325,30 +311,18 @@ export default function MentorStudents() {
               <div className="py-6">
                 <div className="p-4 border border-blue-100 bg-blue-50/50 rounded-xl mb-4">
                   <h4 className="text-sm font-bold text-[#0F172A] flex items-center gap-2 mb-2">
-                    <FileText className="w-4 h-4 text-blue-600" /> Recent Submission: REST API Auth
+                    <FileText className="w-4 h-4 text-blue-600" /> Recent Submission: AI Analysis
                   </h4>
-                  <p className="text-sm text-[#475569] mb-3">AI Evaluation: Excellent use of JWT tokens. However, error handling middleware could be improved to catch async rejections.</p>
-                  <Tag color="blue">Score: 92/100</Tag>
+                  <p className="text-sm text-[#475569] mb-3">AI Evaluation: Overall satisfactory approach. Maintain clean architecture principles.</p>
+                  <Tag color="blue">Average Score: {selectedStudent.aiScore}/100</Tag>
                 </div>
               </div>
             </TabPane>
             <TabPane tab="Assessments & Attendance" key="4">
               <div className="py-6 space-y-6">
                 <div>
-                  <h4 className="font-semibold text-[#0F172A] mb-3">Assessment History</h4>
-                  <Table 
-                    size="small" 
-                    pagination={false}
-                    columns={[
-                      { title: 'Exam', dataIndex: 'exam' },
-                      { title: 'Score', dataIndex: 'score' },
-                      { title: 'Status', dataIndex: 'status', render: s => <Tag color="success">{s}</Tag> }
-                    ]}
-                    dataSource={[
-                      { key: 1, exam: 'Week 1 Basics', score: '85%', status: 'Pass' },
-                      { key: 2, exam: 'Week 2 Advanced', score: '90%', status: 'Pass' },
-                    ]}
-                  />
+                  <h4 className="font-semibold text-[#0F172A] mb-3">Attendance Stats</h4>
+                  <p className="text-sm text-slate-600">Overall Attendance: <span className="font-bold text-blue-600">{selectedStudent.attendance}%</span></p>
                 </div>
               </div>
             </TabPane>
@@ -357,8 +331,8 @@ export default function MentorStudents() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 rounded-full mb-4">
                   <Award className="w-8 h-8 text-emerald-500" />
                 </div>
-                <h4 className="font-semibold text-[#0F172A] mb-1">No Certificates Yet</h4>
-                <p className="text-sm text-slate-500">Student must complete the internship roadmap to unlock certificates.</p>
+                <h4 className="font-semibold text-[#0F172A] mb-1">{selectedStudent.status === 'Completed' ? 'Certificate Issued' : 'No Certificates Yet'}</h4>
+                <p className="text-sm text-slate-500">{selectedStudent.status === 'Completed' ? 'This student has successfully completed the roadmap.' : 'Student must complete the internship roadmap to unlock certificates.'}</p>
               </div>
             </TabPane>
           </Tabs>
