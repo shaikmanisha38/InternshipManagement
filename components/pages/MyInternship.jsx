@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Card, Progress, Avatar, Tag, Typography, Row, Col, Divider, Spin, Alert, Tabs } from 'antd';
+import { Card, Progress, Avatar, Tag, Typography, Row, Col, Divider, Spin, Alert, Tabs, Button } from 'antd';
 import {
   CalendarOutlined,
   ClockCircleOutlined,
@@ -17,6 +17,9 @@ export default function MyInternship() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // State for tracking which courses the user has clicked "Enroll" on
+  const [enrolledCourses, setEnrolledCourses] = useState({});
 
   useEffect(() => {
     const fetchMyInternship = async () => {
@@ -83,7 +86,6 @@ export default function MyInternship() {
       color: colors[i % colors.length]
     }));
 
-    // Create some static learning outcomes based on description
     const learningOutcomes = [
       `Master core concepts of ${technologies[0]?.name || 'the tech stack'}`,
       `Build real-world projects and scalable architecture`,
@@ -229,11 +231,65 @@ export default function MyInternship() {
     { key: 'completed', label: 'Completed', children: completedContent },
   ];
 
+  // Mock data for All Internships
+  const availableInternships = [
+    { id: 1, title: 'Full Stack Web Development', duration: '8 Weeks', tech: ['React', 'Node.js', 'PostgreSQL'], desc: 'Build scalable web applications from scratch.' },
+    { id: 2, title: 'Data Science & Machine Learning', duration: '12 Weeks', tech: ['Python', 'TensorFlow', 'Pandas'], desc: 'Analyze data and build predictive AI models.' },
+    { id: 3, title: 'Cloud Computing & DevOps', duration: '6 Weeks', tech: ['AWS', 'Docker', 'Kubernetes'], desc: 'Learn to deploy and scale applications in the cloud.' },
+    { id: 4, title: 'UI/UX Design', duration: '4 Weeks', tech: ['Figma', 'Prototyping', 'User Research'], desc: 'Design beautiful and user-friendly interfaces.' },
+  ];
+
+  const handleEnroll = (id) => {
+    setEnrolledCourses(prev => ({ ...prev, [id]: true }));
+  };
+
+  const allInternshipsContent = (
+    <div className="py-8">
+      <Row gutter={[24, 24]}>
+        {availableInternships.map(course => (
+          <Col xs={24} md={12} lg={8} key={course.id}>
+            <Card className="rounded-2xl border-slate-200 shadow-sm h-full flex flex-col hover:shadow-md transition-shadow">
+              <div className="flex-grow">
+                <Title level={4} className="!mb-2 !mt-0">{course.title}</Title>
+                <Text className="text-slate-500 block mb-3"><ClockCircleOutlined /> {course.duration}</Text>
+                <Paragraph className="text-slate-600 mb-4">{course.desc}</Paragraph>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {course.tech.map(t => (
+                    <Tag key={t} color="blue" className="rounded-md m-0">{t}</Tag>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="mt-auto pt-4 border-t border-slate-100">
+                {enrolledCourses[course.id] ? (
+                  <Alert 
+                    message="Enrollment Pending" 
+                    description="Contact mentor for approval" 
+                    type="warning" 
+                    showIcon 
+                    className="rounded-lg"
+                  />
+                ) : (
+                  <Button 
+                    type="primary" 
+                    className="w-full h-10 rounded-xl font-semibold shadow-sm" 
+                    onClick={() => handleEnroll(course.id)}
+                  >
+                    Enroll Now
+                  </Button>
+                )}
+              </div>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    </div>
+  );
+
   const mainTabsItems = [
     { key: 'my-internships', label: 'My Internships', children: <Tabs defaultActiveKey="in-progress" items={myInternshipsItems} className="mt-2" /> },
     { key: 'wishlist', label: 'Wishlist', children: <div className="py-16 text-center text-slate-500 text-lg">Your wishlist is empty.</div> },
-    { key: 'recommended', label: 'Recommended', children: <div className="py-16 text-center text-slate-500 text-lg">No recommendations available at this time.</div> },
-    { key: 'all-internships', label: 'All Internships', children: <div className="py-16 text-center text-slate-500 text-lg">Browse all available internships here.</div> },
+    { key: 'all-internships', label: 'All Internships', children: allInternshipsContent },
   ];
 
   return (
