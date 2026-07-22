@@ -11,7 +11,8 @@ import {
   ClockCircleOutlined,
   UploadOutlined,
   WarningFilled,
-  LinkOutlined
+  LinkOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 
@@ -334,16 +335,27 @@ export default function DailySubmission() {
               <Divider className="my-6 border-slate-100" />
 
               <Form.Item className="mb-0 text-right">
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  loading={submitting}
-                  icon={<UploadOutlined />}
-                  className="h-12 px-8 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-sm text-white"
-                >
-                  Submit
-                </Button>
+                <Space size="middle">
+                  <Button
+                    type="default"
+                    size="large"
+                    icon={<RobotOutlined />}
+                    className="h-12 px-6 rounded-lg font-bold border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                    onClick={() => message.info('Running AI static analysis on your code...')}
+                  >
+                    AI Pre-Flight Check
+                  </Button>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    size="large"
+                    loading={submitting}
+                    icon={<UploadOutlined />}
+                    className="h-12 px-8 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-sm text-white"
+                  >
+                    Submit
+                  </Button>
+                </Space>
               </Form.Item>
             </Form>
           </Card>

@@ -118,7 +118,7 @@ export default function Roadmap() {
   if (error) {
     return (
       <div className="p-8">
-        <Alert message="Error" description={error} type="error" showIcon />
+        <Alert title="Error" description={error} type="error" showIcon />
       </div>
     );
   }
@@ -159,7 +159,7 @@ export default function Roadmap() {
 
         {weeksDetails.length === 0 && (
            <Col span={24}>
-             <Alert message="No roadmap data available for this internship track yet." type="info" showIcon />
+             <Alert title="No roadmap data available for this internship track yet." type="info" showIcon />
            </Col>
         )}
 

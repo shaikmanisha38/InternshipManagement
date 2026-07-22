@@ -154,8 +154,7 @@ export default function Attendance() {
               <Progress 
                 type="dashboard" 
                 percent={94} 
-                strokeColor={{ '0%': '#3b82f6', '100%': '#10b981' }} 
-                strokeWidth={10}
+                strokeColor={{ '0%': '#3b82f6', '100%': '#10b981' }}
                 size={140}
                 format={(percent) => (
                   <div className="flex flex-col items-center">

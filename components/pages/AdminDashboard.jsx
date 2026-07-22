@@ -1,159 +1,212 @@
-import React from 'react';
-import { Users, AlertTriangle, CheckCircle2, TrendingUp, Settings } from 'lucide-react';
+"use client";
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, UserCheck, Briefcase, ClipboardList, Building2, CheckCircle2, Award, 
+  Plus, FileText, TrendingUp, BarChart2 
+} from 'lucide-react';
+import { Card, Button, Row, Col, Statistic, message } from 'antd';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
+} from 'recharts';
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    totalMentors: 0,
+    totalInternships: 0,
+    pendingApplications: 0,
+    activeInternships: 0,
+    completedInternships: 0,
+    certificatesIssued: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/v1/admin/stats', { 
+          cache: 'no-store',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        } else {
+          console.error("Failed to fetch admin stats");
+        }
+      } catch (error) {
+        console.error("Error fetching admin stats:", error);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const statCards = [
+    { title: 'Total Students', value: stats.totalStudents, icon: <Users className="w-6 h-6 text-blue-500" />, color: 'border-blue-500' },
+    { title: 'Total Mentors', value: stats.totalMentors, icon: <UserCheck className="w-6 h-6 text-indigo-500" />, color: 'border-indigo-500' },
+    { title: 'Total Internships', value: stats.totalInternships, icon: <Briefcase className="w-6 h-6 text-emerald-500" />, color: 'border-emerald-500' },
+    { title: 'Pending Applications', value: stats.pendingApplications, icon: <ClipboardList className="w-6 h-6 text-amber-500" />, color: 'border-amber-500' },
+    { title: 'Active Internships', value: stats.activeInternships, icon: <Building2 className="w-6 h-6 text-teal-500" />, color: 'border-teal-500' },
+    { title: 'Completed Internships', value: stats.completedInternships, icon: <CheckCircle2 className="w-6 h-6 text-green-500" />, color: 'border-green-500' },
+    { title: 'Certificates Issued', value: stats.certificatesIssued, icon: <Award className="w-6 h-6 text-purple-500" />, color: 'border-purple-500' },
+  ];
+
+  // Mock Data for Charts
+  const registrationData = [
+    { month: 'Jan', students: 120 }, { month: 'Feb', students: 150 },
+    { month: 'Mar', students: 180 }, { month: 'Apr', students: 220 },
+    { month: 'May', students: 270 }, { month: 'Jun', students: 310 },
+  ];
+
+  const categoryData = [
+    { name: 'Web Dev', value: 45 }, { name: 'Data Science', value: 25 },
+    { name: 'Mobile', value: 20 }, { name: 'Cloud', value: 10 },
+  ];
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
+
+  const applicationData = [
+    { name: 'Accepted', value: 450, color: '#10b981' },
+    { name: 'Pending', value: 142, color: '#f59e0b' },
+    { name: 'Rejected', value: 85, color: '#ef4444' },
+  ];
+
+  const completionData = [
+    { month: 'Jan', completions: 40 }, { month: 'Feb', completions: 65 },
+    { month: 'Mar', completions: 85 }, { month: 'Apr', completions: 110 },
+    { month: 'May', completions: 145 }, { month: 'Jun', completions: 180 },
+  ];
+
   return (
-    <div className="space-y-8 pb-10">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight mb-2">Admin Dashboard</h1>
-        <p className="text-textMuted">Platform overview, user management, and system analytics.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="glass p-6 rounded-2xl border-l-4 border-l-primary">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-sm font-bold text-textMuted uppercase tracking-wider">Total Interns</h3>
-            <Users className="w-5 h-5 text-primary" />
-          </div>
-          <p className="text-3xl font-bold">142</p>
+    <div className="p-4 md:p-8 space-y-8 bg-slate-50 min-h-full">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Admin Dashboard</h1>
+          <p className="text-slate-500 font-medium">System overview and core metrics.</p>
         </div>
-        
-        <div className="glass p-6 rounded-2xl border-l-4 border-l-secondary">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-sm font-bold text-textMuted uppercase tracking-wider">Completion Rate</h3>
-            <CheckCircle2 className="w-5 h-5 text-secondary" />
-          </div>
-          <p className="text-3xl font-bold">78%</p>
-        </div>
-
-        <div className="glass p-6 rounded-2xl border-l-4 border-l-orange-500">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-sm font-bold text-textMuted uppercase tracking-wider">Churn Risk</h3>
-            <AlertTriangle className="w-5 h-5 text-orange-500" />
-          </div>
-          <p className="text-3xl font-bold">12</p>
-        </div>
-
-        <div className="glass p-6 rounded-2xl border-l-4 border-l-accent">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-sm font-bold text-textMuted uppercase tracking-wider">Avg Code Score</h3>
-            <TrendingUp className="w-5 h-5 text-accent" />
-          </div>
-          <p className="text-3xl font-bold">92/100</p>
+        <div className="flex flex-wrap gap-3">
+          <Button type="primary" className="bg-blue-600 rounded-lg flex items-center gap-2" icon={<Plus className="w-4 h-4"/>}>
+            Create Internship
+          </Button>
+          <Button type="default" className="rounded-lg flex items-center gap-2" icon={<Plus className="w-4 h-4"/>}>
+            Add Mentor
+          </Button>
+          <Button type="default" className="rounded-lg flex items-center gap-2" icon={<Plus className="w-4 h-4"/>}>
+            Add Student
+          </Button>
+          <Button type="dashed" className="rounded-lg flex items-center gap-2" icon={<FileText className="w-4 h-4"/>}>
+            View Reports
+          </Button>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        <div className="glass p-8 rounded-3xl">
-          <h2 className="text-xl font-bold mb-6">Stagnation List (High Risk)</h2>
-          <div className="space-y-4">
-            {[
-              { name: 'David Lee', days: 5, module: 'Week 2' },
-              { name: 'Emma Wilson', days: 4, module: 'Week 3' },
-              { name: 'Frank Ocean', days: 4, module: 'Week 3' },
-            ].map((intern, i) => (
-              <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-borderCustom rounded-xl">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center font-bold">
-                    {intern.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="font-bold">{intern.name}</h4>
-                    <p className="text-xs text-textMuted">Stuck on {intern.module}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-red-400 font-bold text-sm block">{intern.days} days inactive</span>
-                  <button className="text-xs text-primary font-bold hover:underline mt-1">Intervene</button>
-                </div>
+      {/* STAT CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((stat, idx) => (
+          <Card key={idx} className={`rounded-xl border-l-4 shadow-sm ${stat.color}`} styles={{ body: { padding: '20px' } }}>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{stat.title}</p>
+                <h3 className="text-2xl font-black text-slate-800">{stat.value}</h3>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Attendance & Activity Tracking */}
-        <div className="glass p-8 rounded-3xl border border-primary/20">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            Attendance & Activity
-          </h2>
-          <div className="space-y-6">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-textMuted font-bold">Daily Active Students</span>
-                <span className="text-primary font-bold">85% (120/142)</span>
-              </div>
-              <div className="w-full bg-black/40 rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full" style={{ width: '85%' }}></div>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                {stat.icon}
               </div>
             </div>
-            
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-textMuted font-bold">Task Completion Rate (Week 3)</span>
-                <span className="text-accent font-bold">62%</span>
-              </div>
-              <div className="w-full bg-black/40 rounded-full h-2">
-                <div className="bg-accent h-2 rounded-full" style={{ width: '62%' }}></div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-borderCustom">
-              <h4 className="text-sm font-bold text-white mb-3">Recent Activity Logs</h4>
-              <ul className="space-y-3">
-                <li className="text-xs text-textMuted flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                  <span className="text-white">Alice Chen</span> passed AI Evaluation for Week 3, Day 4.
-                </li>
-                <li className="text-xs text-textMuted flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-                  <span className="text-white">Bob Smith</span> failed Git Validation (Build Error).
-                </li>
-                <li className="text-xs text-textMuted flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                  <span className="text-white">Charlie Davis</span> unlocked Week 4 modules.
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        <div className="glass p-8 rounded-3xl border border-secondary/20 bg-secondary/5">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-secondary flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Manual Review Bypass
-            </h2>
-          </div>
-          <p className="text-sm text-textMuted mb-6">
-            Use this panel to manually override failed AI evaluations or Git validations for exceptional cases.
-          </p>
-          
-          <div className="space-y-4">
-            <div className="p-4 bg-background border border-borderCustom rounded-xl">
-              <label className="block text-xs font-bold uppercase tracking-wider text-textMuted mb-2">Search Intern</label>
-              <input type="text" placeholder="e.g. Alice Chen" className="w-full bg-white/5 border border-borderCustom rounded-lg px-4 py-2 outline-none focus:border-primary transition-colors" />
+      {/* CHARTS */}
+      <Row gutter={[24, 24]}>
+        {/* Student Registrations */}
+        <Col xs={24} lg={12}>
+          <Card title={<span className="flex items-center gap-2"><TrendingUp className="w-5 h-5 text-blue-500"/> Student Registrations</span>} className="rounded-2xl shadow-sm border-slate-200">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={registrationData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorStudents" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Area type="monotone" dataKey="students" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorStudents)" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-            
-            <div className="p-4 bg-background border border-borderCustom rounded-xl">
-              <label className="block text-xs font-bold uppercase tracking-wider text-textMuted mb-2">Select Module</label>
-              <select className="w-full bg-white/5 border border-borderCustom rounded-lg px-4 py-2 outline-none focus:border-primary transition-colors appearance-none">
-                <option>Week 1: Fundamentals</option>
-                <option>Week 2: Advanced Concepts</option>
-                <option>Week 3: Mini Modules</option>
-                <option>Week 4: APIs & DBs</option>
-                <option>Week 5: Main Project</option>
-              </select>
-            </div>
+          </Card>
+        </Col>
 
-            <button className="w-full py-3 bg-secondary text-black font-bold rounded-xl hover:bg-secondary/90 transition-colors mt-2 shadow-lg shadow-secondary/20">
-              Force Unlock Module
-            </button>
-          </div>
-        </div>
-      </div>
+        {/* Internships by Category */}
+        <Col xs={24} lg={12}>
+          <Card title={<span className="flex items-center gap-2"><BarChart2 className="w-5 h-5 text-indigo-500"/> Internships by Category</span>} className="rounded-2xl shadow-sm border-slate-200">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </Col>
+
+        {/* Application Status */}
+        <Col xs={24} lg={12}>
+          <Card title={<span className="flex items-center gap-2"><ClipboardList className="w-5 h-5 text-amber-500"/> Application Status</span>} className="rounded-2xl shadow-sm border-slate-200">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={applicationData} layout="vertical" margin={{ top: 10, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fill: '#475569', fontWeight: 'bold'}} />
+                  <Tooltip cursor={{fill: 'rgba(0,0,0,0.02)'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={32}>
+                    {applicationData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </Col>
+
+        {/* Monthly Completions */}
+        <Col xs={24} lg={12}>
+          <Card title={<span className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-500"/> Monthly Completions</span>} className="rounded-2xl shadow-sm border-slate-200">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={completionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Line type="monotone" dataKey="completions" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </Col>
+      </Row>
     </div>
   );
 }

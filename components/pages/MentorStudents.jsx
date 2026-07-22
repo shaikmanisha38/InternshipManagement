@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, Input, Select, Table, Drawer, Tabs, Button, Tag, Avatar, Progress, Space 
 } from 'antd';
@@ -93,6 +93,49 @@ const studentData = [
 export default function MentorStudents() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  
+  const [applications, setApplications] = useState([]);
+  const [loadingApps, setLoadingApps] = useState(true);
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const fetchApplications = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/mentor/applications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setApplications(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingApps(false);
+    }
+  };
+
+  const handleApplication = async (id, status) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/v1/mentor/applications/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      if (response.ok) {
+        fetchApplications(); // Refresh list
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleRowClick = (record) => {
     setSelectedStudent(record);
@@ -105,6 +148,61 @@ export default function MentorStudents() {
   };
 
   // --- COLUMNS CONFIGURATION ---
+  const applicationColumns = [
+    {
+      title: 'Student',
+      dataIndex: 'student',
+      key: 'student',
+      render: (student) => (
+        <div className="flex items-center gap-3">
+          <Avatar className="bg-indigo-100 text-indigo-600">{student?.name?.charAt(0) || 'U'}</Avatar>
+          <div>
+            <div className="font-semibold text-slate-800">{student?.name}</div>
+            <div className="text-xs text-slate-500">{student?.email}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Internship',
+      dataIndex: 'internship',
+      key: 'internship',
+      render: (internship) => (
+        <div>
+          <div className="font-semibold text-slate-800">{internship?.title}</div>
+          <div className="text-xs text-slate-500">{internship?.companyName}</div>
+        </div>
+      )
+    },
+    {
+      title: 'Applied On',
+      dataIndex: 'appliedAt',
+      key: 'appliedAt',
+      render: (text) => new Date(text).toLocaleDateString()
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      render: (_, record) => (
+        <Space>
+          <Button 
+            type="primary" 
+            className="bg-green-500 hover:bg-green-600 border-none"
+            onClick={() => handleApplication(record.id, 'ACCEPTED')}
+          >
+            Accept
+          </Button>
+          <Button 
+            danger 
+            onClick={() => handleApplication(record.id, 'REJECTED')}
+          >
+            Reject
+          </Button>
+        </Space>
+      ),
+    }
+  ];
+
   const columns = [
     {
       title: 'Identity',
@@ -224,16 +322,30 @@ export default function MentorStudents() {
 
         {/* ZONE 2: MASTER STUDENT DIRECTORY */}
         <Card className="rounded-xl shadow-sm shadow-blue-900/5 border border-slate-100 overflow-hidden"  styles={{ body: { padding: 0 } }}>
-          <Table 
-            columns={columns} 
-            dataSource={studentData} 
-            pagination={{ pageSize: 10, position: ['bottomCenter'] }}
-            onRow={(record) => ({
-              onClick: () => handleRowClick(record),
-              className: 'cursor-pointer hover:bg-slate-50 transition-colors'
-            })}
-            size="large"
-          />
+            <Tabs defaultActiveKey="1" className="mt-4">
+              <TabPane tab="Enrolled Students" key="1">
+                <Table 
+                  columns={columns} 
+                  dataSource={studentData} 
+                  pagination={{ pageSize: 7 }}
+                  onRow={(record) => ({
+                    onClick: () => handleRowClick(record),
+                    className: 'cursor-pointer hover:bg-slate-50 transition-colors'
+                  })}
+                  className="mt-4 border border-slate-200 rounded-lg overflow-hidden"
+                />
+              </TabPane>
+              <TabPane tab={<Badge count={applications.length} offset={[10, 0]}>Pending Applications</Badge>} key="2">
+                 <Table 
+                  columns={applicationColumns} 
+                  dataSource={applications} 
+                  rowKey="id"
+                  loading={loadingApps}
+                  pagination={{ pageSize: 7 }}
+                  className="mt-4 border border-slate-200 rounded-lg overflow-hidden"
+                />
+              </TabPane>
+            </Tabs>
         </Card>
 
       </div>

@@ -53,8 +53,7 @@ export default function AIFeedback() {
               <Progress 
                 type="circle" 
                 percent={84} 
-                strokeColor={{ '0%': '#3b82f6', '100%': '#8b5cf6' }} 
-                strokeWidth={10}
+                strokeColor={{ '0%': '#3b82f6', '100%': '#8b5cf6' }}
                 size={120}
                 format={(percent) => (
                   <div className="flex flex-col items-center">
@@ -78,7 +77,7 @@ export default function AIFeedback() {
                 <div className="w-full">
                   <Text className="text-slate-800 font-bold text-lg leading-none block mb-1">{metric.percent}%</Text>
                   <Text className="text-slate-500 font-bold text-[10px] uppercase tracking-wider block mb-2 h-6">{metric.label}</Text>
-                  <Progress percent={metric.percent} showInfo={false} size="small" strokeColor={metric.color} trailColor="#f1f5f9" className="m-0" />
+                  <Progress percent={metric.percent} showInfo={false} size="small" strokeColor={metric.color} railColor="#f1f5f9" className="m-0" />
                 </div>
               </div>
             </Card>

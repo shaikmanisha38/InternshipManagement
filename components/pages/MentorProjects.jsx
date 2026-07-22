@@ -252,13 +252,13 @@ export default function MentorProjects() {
               </div>
             </TabPane>
 
-            {/* TAB B: INTERACTIVE ROADMAP & DAILY TASK BUILDER */}
-            <TabPane tab="Curriculum & Tasks" key="2">
-              <div className="py-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-lg text-[#0F172A]">Roadmap Builder</h3>
+            {/* TAB B: INTERACTIVE MODULE & DAILY LESSON BUILDER */}
+            <TabPane tab="Curriculum & Lessons" key="2">
+              <div className="bg-slate-50 p-6 border-b border-slate-200">
+                <div className="flex justify-between items-center max-w-4xl mx-auto">
+                  <h3 className="font-bold text-lg text-[#0F172A]">Module Builder</h3>
                   <Button type="primary" className="bg-blue-600 rounded-lg" icon={<Plus className="w-4 h-4" />} onClick={openTaskModal}>
-                    Add Task
+                    Add Lesson
                   </Button>
                 </div>
 
@@ -270,17 +270,17 @@ export default function MentorProjects() {
                     <div className="space-y-4">
                       {week.days.map(day => (
                         <div key={day.day} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow group relative">
-                          {/* Task Header */}
+                          {/* Lesson Header */}
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex items-center gap-3">
-                              <span className="bg-slate-100 text-slate-600 font-bold px-3 py-1 rounded-md text-xs">Day {day.day}</span>
-                              <h5 className="font-bold text-[#0F172A] text-base">{day.title}</h5>
+                              <span className="bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded text-xs">Day {day.day}</span>
+                              <h4 className="font-bold text-[#0F172A] m-0 text-base">{day.title}</h4>
                             </div>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                              <Tooltip title="Edit Task">
-                                <Button size="small" type="text" icon={<Edit3 className="w-4 h-4 text-slate-500" />} />
+                            <div className="flex gap-2">
+                              <Tooltip title="Edit Lesson">
+                                <Button type="text" size="small" icon={<Edit3 className="w-4 h-4 text-slate-400" />} />
                               </Tooltip>
-                              <Tooltip title="Delete Task">
+                              <Tooltip title="Delete Lesson">
                                 <Button size="small" type="text" danger icon={<Trash2 className="w-4 h-4" />} />
                               </Tooltip>
                             </div>
@@ -317,11 +317,11 @@ export default function MentorProjects() {
                     </div>
                   </div>
                 )) : (
-                  <div className="text-center py-12 bg-white rounded-xl border border-slate-200 border-dashed">
-                    <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <h3 className="text-[#0F172A] font-bold">No tasks created yet</h3>
-                    <p className="text-slate-500 text-sm mb-4">Start building your roadmap by adding a new daily task.</p>
-                    <Button type="primary" className="bg-blue-600 rounded-lg" onClick={openTaskModal}>Add First Task</Button>
+                  <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-300">
+                    <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <h3 className="text-[#0F172A] font-bold">No lessons created yet</h3>
+                    <p className="text-slate-500 text-sm mb-4">Start building your module by adding a new lesson.</p>
+                    <Button type="primary" className="bg-blue-600 rounded-lg" onClick={openTaskModal}>Add First Lesson</Button>
                   </div>
                 )}
               </div>
@@ -330,33 +330,34 @@ export default function MentorProjects() {
         )}
       </Drawer>
 
-      {/* TASK CREATE/EDIT MODAL */}
-      <Modal
-        title={<span className="text-[#0F172A] font-bold">Create New Task</span>}
-        open={modalVisible}
+      {/* LESSON CREATE/EDIT MODAL */}
+      <Modal 
+        title={<span className="text-[#0F172A] font-bold">Create New Lesson</span>}
+        open={modalVisible} 
         onCancel={() => setModalVisible(false)}
         footer={null}
-        width={600}
+        destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleTaskSubmit} className="mt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Form.Item name="week" label="Week Number" rules={[{ required: true }]}>
-              <Select placeholder="Select Week" size="large">
-                <Option value={1}>Week 1</Option>
-                <Option value={2}>Week 2</Option>
+          <div className="flex gap-4">
+            <Form.Item name="week" label="Module/Week Number" rules={[{ required: true }]} className="flex-1">
+              <Select placeholder="Select Module" size="large">
+                <Option value={1}>Module 1</Option>
+                <Option value={2}>Module 2</Option>
+                <Option value={3}>Module 3</Option>
+                <Option value={4}>Module 4</Option>
               </Select>
             </Form.Item>
-            <Form.Item name="day" label="Day Number" rules={[{ required: true }]}>
-              <Select placeholder="Select Day" size="large">
-                <Option value={1}>Day 1</Option>
-                <Option value={2}>Day 2</Option>
-              </Select>
+            <Form.Item name="day" label="Lesson Day" rules={[{ required: true }]} className="flex-1">
+              <Input type="number" placeholder="e.g. 1" size="large" />
             </Form.Item>
           </div>
-          <Form.Item name="title" label="Task Title" rules={[{ required: true }]}>
-            <Input placeholder="e.g. Initialize GitHub Repository" size="large" />
+
+          <Form.Item name="title" label="Lesson Title" rules={[{ required: true }]}>
+            <Input placeholder="e.g. Setting up the Development Environment" size="large" />
           </Form.Item>
-          <Form.Item name="desc" label="Task Description">
+          
+          <Form.Item name="desc" label="Lesson Description">
             <TextArea rows={4} placeholder="Detailed instructions for the intern..." />
           </Form.Item>
           <div className="grid grid-cols-2 gap-4">

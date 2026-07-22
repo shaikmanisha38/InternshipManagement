@@ -1,11 +1,11 @@
 "use client";
-import PlaceholderPage from '@/components/pages/PlaceholderPage';
+import AdminMentors from '@/components/pages/AdminMentors';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 
 export default function Page() {
   return (
     <DashboardLayout role="admin">
-      <PlaceholderPage title="Admin mentors" />
+      <AdminMentors />
     </DashboardLayout>
   );
 }

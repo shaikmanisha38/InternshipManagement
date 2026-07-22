@@ -20,6 +20,12 @@ enum InternshipStatus {
   DROPPED
 }
 
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 enum InternshipPostingStatus {
   OPEN
   FILLED
@@ -71,6 +77,7 @@ model User {
   mentoredInternships Internship[] @relation("MentorInternships")
   
   studentInternships  StudentInternship[]
+  internshipApplications InternshipApplication[]
   taskSubmissions     TaskSubmission[]
   githubAccount       GithubAccount?
   assessmentSubmissions AssessmentSubmission[]
@@ -102,6 +109,7 @@ model Internship {
 
   mentor             User?               @relation("MentorInternships", fields: [mentorId], references: [id], onDelete: Cascade)
   studentInternships StudentInternship[]
+  applications       InternshipApplication[]
   roadmaps           Roadmap[]
 
   @@map("internships")
@@ -122,6 +130,21 @@ model StudentInternship {
   internship   Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
 
   @@map("student_internships")
+}
+
+model InternshipApplication {
+  id           String   @id @default(uuid())
+  studentId    String
+  internshipId String
+  status       ApplicationStatus @default(PENDING)
+  appliedAt    DateTime @default(now())
+  reviewedAt   DateTime?
+
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  internship   Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, internshipId])
+  @@map("internship_applications")
 }
 
 model Roadmap {

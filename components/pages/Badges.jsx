@@ -120,8 +120,8 @@ export default function Badges() {
               <Progress
                 percent={progressPercent}
                 strokeColor={{ '0%': '#3b82f6', '100%': '#8b5cf6' }}
-                trailColor="#f1f5f9"
-                strokeWidth={12}
+                railColor="#f1f5f9"
+                size={12}
                 className="[&_.ant-progress-text]:text-slate-900 [&_.ant-progress-text]:font-bold"
               />
             </div>

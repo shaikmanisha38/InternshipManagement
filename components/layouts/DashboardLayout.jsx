@@ -45,15 +45,17 @@ export default function DashboardLayout({ role = "student", children }) {
           { name: 'Dashboard', path: '/admin', icon: LayoutDashboard, group: 'Overview' },
           { name: 'Students', path: '/admin/students', icon: Users, group: 'User Management' },
           { name: 'Mentors', path: '/admin/mentors', icon: UserCheck, group: 'User Management' },
-          { name: 'Users', path: '/admin/users', icon: UsersRound, group: 'User Management' },
-          { name: 'Roles', path: '/admin/roles', icon: Shield, group: 'User Management' },
-          { name: 'Projects', path: '/admin/projects', icon: FolderKanban, group: 'System Operations' },
-          { name: 'Roadmaps', path: '/admin/roadmaps', icon: Map, group: 'System Operations' },
-          { name: 'Task Management', path: '/admin/tasks', icon: ListTodo, group: 'System Operations' },
-          { name: 'Certificates', path: '/admin/certificates', icon: Award, group: 'System Operations' },
-          { name: 'Analytics', path: '/admin/analytics', icon: PieChart, group: 'Insights & Settings' },
-          { name: 'System Logs', path: '/admin/logs', icon: Terminal, group: 'Insights & Settings' },
-          { name: 'Settings', path: '/admin/settings', icon: Settings, group: 'Insights & Settings' },
+
+          { name: 'Roles & Permissions', path: '/admin/roles', icon: Shield, group: 'User Management' },
+          { name: 'Internships', path: '/admin/internships', icon: Briefcase, group: 'Internship Management' },
+          { name: 'Applications', path: '/admin/applications', icon: ClipboardList, group: 'Internship Management' },
+          { name: 'Active Internships', path: '/admin/active-internships', icon: Building2, group: 'Internship Management' },
+          { name: 'Modules', path: '/admin/modules', icon: Map, group: 'Internship Management' },
+          { name: 'Certificates', path: '/admin/certificates', icon: Award, group: 'Internship Management' },
+          { name: 'Task Management', path: '/admin/tasks', icon: ListTodo, group: 'Operations' },
+          { name: 'Analytics', path: '/admin/analytics', icon: PieChart, group: 'System' },
+          { name: 'System Logs', path: '/admin/logs', icon: Terminal, group: 'System' },
+          { name: 'Settings', path: '/admin/settings', icon: Settings, group: 'System' },
         ];
       case 'mentor':
         return [
@@ -72,7 +74,6 @@ export default function DashboardLayout({ role = "student", children }) {
         return [
           { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, group: 'Overview' },
           { name: 'My Internship', path: '/dashboard/internship', icon: Briefcase, group: 'Internship Details' },
-          { name: 'Roadmap', path: '/dashboard/roadmap', icon: Map, group: 'Learning & Tasks' },
           { name: 'Today\'s Task', path: '/dashboard/task', icon: CheckSquare, group: 'Learning & Tasks' },
           { name: 'Daily Submission', path: '/dashboard/submission', icon: UploadCloud, group: 'Learning & Tasks' },
           { name: 'Weekly Assessments', path: '/dashboard/assessments', icon: ClipboardCheck, group: 'Learning & Tasks' },
@@ -162,13 +163,7 @@ export default function DashboardLayout({ role = "student", children }) {
 
         {/* Bottom Actions */}
         <div className="p-4 mt-auto border-t border-borderCustom/50 space-y-2">
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-textMuted hover:text-white hover:bg-white/5 transition-all text-sm font-medium"
-          >
-            <Home className="w-5 h-5" />
-            Go to Main Page
-          </button>
+
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all text-sm font-medium"
