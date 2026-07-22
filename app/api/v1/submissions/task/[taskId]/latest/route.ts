@@ -4,7 +4,7 @@ import { jwtVerify } from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
-export async function GET(req: Request, { params }: { params: { taskId: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ taskId: string }> }) {
   try {
     // 1. Authenticate user
     const authHeader = req.headers.get('authorization');
@@ -29,7 +29,7 @@ export async function GET(req: Request, { params }: { params: { taskId: string }
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
     const userId = payload.userId as string;
-    const taskId = params.taskId;
+    const { taskId } = await params;
 
     const submission = await prisma.taskSubmission.findFirst({
       where: { userId: userId, taskId: taskId },

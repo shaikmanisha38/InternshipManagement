@@ -85,6 +85,8 @@ model User {
   mentorCertificates    Certificate[]          @relation("MentorCertificates")
   assignedProjects      ProjectStudent[]
   taskTrackers          TaskTracker[]
+  studentEnrollments    Enrollment[]           @relation("StudentEnrollments")
+  mentorEnrollments     Enrollment[]           @relation("MentorEnrollments")
 
   @@map("users")
 }
@@ -108,6 +110,7 @@ model Internship {
   mentor             User?               @relation("MentorInternships", fields: [mentorId], references: [id], onDelete: Cascade)
   studentInternships StudentInternship[]
   roadmaps           Roadmap[]
+  enrollments        Enrollment[]
 
   @@map("internships")
 }
@@ -127,6 +130,22 @@ model StudentInternship {
   internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
 
   @@map("student_internships")
+}
+
+model Enrollment {
+  id           String   @id @default(uuid())
+  studentId    String
+  mentorId     String
+  internshipId String
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student      User       @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+  mentor       User       @relation("MentorEnrollments", fields: [mentorId], references: [id], onDelete: Cascade)
+  internship   Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+
+  @@map("enrollments")
 }
 
 model Roadmap {

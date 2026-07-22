@@ -80,7 +80,7 @@ export async function GET(req: Request) {
         mostImprovedStudent = { name: student.name, avatar: student.profileImage, jump: weeklyPoints };
       }
 
-      const badges = student.studentBadges.map(sb => sb.badge.name);
+      const badges = student.studentBadges.map(sb => sb.badge.badgeName);
 
       const totalDays = student.attendance.length || 1;
       const presentDays = student.attendance.filter(a => a.status === 'Present').length;

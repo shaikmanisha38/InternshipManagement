@@ -20,6 +20,8 @@ export default function MyInternship() {
   
   // State for tracking which courses the user has clicked "Enroll" on
   const [enrolledCourses, setEnrolledCourses] = useState({});
+  const [availableInternships, setAvailableInternships] = useState([]);
+  const [internshipsLoading, setInternshipsLoading] = useState(false);
 
   useEffect(() => {
     const fetchMyInternship = async () => {
@@ -28,7 +30,8 @@ export default function MyInternship() {
         const response = await fetch('/api/v1/internships/current', {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          cache: 'no-store'
         });
 
         if (response.status === 404) {
@@ -51,6 +54,43 @@ export default function MyInternship() {
     };
 
     fetchMyInternship();
+
+    const fetchAllInternshipsAndEnrollments = async () => {
+      try {
+        setInternshipsLoading(true);
+        const token = localStorage.getItem('token');
+        const [internshipsRes, enrollmentsRes] = await Promise.all([
+          fetch('/api/v1/internships', { headers: { 'Authorization': `Bearer ${token}` }, cache: 'no-store' }),
+          fetch('/api/v1/student/enrollments', { headers: { 'Authorization': `Bearer ${token}` }, cache: 'no-store' })
+        ]);
+        
+        if (internshipsRes.ok) {
+          const { internships } = await internshipsRes.json();
+          const mapped = internships.map(i => ({
+            id: i.id,
+            title: i.title,
+            duration: i.duration,
+            tech: i.techStack?.length ? i.techStack : (i.technology ? i.technology.split(',').map(s => s.trim()) : []),
+            desc: i.description
+          }));
+          setAvailableInternships(mapped);
+        }
+
+        if (enrollmentsRes.ok) {
+          const { enrollments } = await enrollmentsRes.json();
+          const enrollmentMap = {};
+          enrollments.forEach(e => {
+            enrollmentMap[e.internshipId] = e.status;
+          });
+          setEnrolledCourses(enrollmentMap);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setInternshipsLoading(false);
+      }
+    };
+    fetchAllInternshipsAndEnrollments();
   }, []);
 
   let inProgressContent = null;
@@ -231,16 +271,27 @@ export default function MyInternship() {
     { key: 'completed', label: 'Completed', children: completedContent },
   ];
 
-  // Mock data for All Internships
-  const availableInternships = [
-    { id: 1, title: 'Full Stack Web Development', duration: '8 Weeks', tech: ['React', 'Node.js', 'PostgreSQL'], desc: 'Build scalable web applications from scratch.' },
-    { id: 2, title: 'Data Science & Machine Learning', duration: '12 Weeks', tech: ['Python', 'TensorFlow', 'Pandas'], desc: 'Analyze data and build predictive AI models.' },
-    { id: 3, title: 'Cloud Computing & DevOps', duration: '6 Weeks', tech: ['AWS', 'Docker', 'Kubernetes'], desc: 'Learn to deploy and scale applications in the cloud.' },
-    { id: 4, title: 'UI/UX Design', duration: '4 Weeks', tech: ['Figma', 'Prototyping', 'User Research'], desc: 'Design beautiful and user-friendly interfaces.' },
-  ];
-
-  const handleEnroll = (id) => {
-    setEnrolledCourses(prev => ({ ...prev, [id]: true }));
+  const handleEnroll = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/student/enrollments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ internshipId: id })
+      });
+      if (response.ok) {
+        setEnrolledCourses(prev => ({ ...prev, [id]: 'PENDING' }));
+      } else {
+        const err = await response.json();
+        alert(err.message || 'Failed to enroll');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error enrolling');
+    }
   };
 
   const allInternshipsContent = (
@@ -261,11 +312,25 @@ export default function MyInternship() {
               </div>
               
               <div className="mt-auto pt-4 border-t border-slate-100">
-                {enrolledCourses[course.id] ? (
+                {enrolledCourses[course.id] === 'PENDING' ? (
                   <Alert 
                     message="Enrollment Pending" 
-                    description="Contact mentor for approval" 
+                    description="Contact mentor for approval." 
                     type="warning" 
+                    showIcon 
+                    className="rounded-lg"
+                  />
+                ) : enrolledCourses[course.id] === 'APPROVED' ? (
+                  <Alert 
+                    message="Approved" 
+                    type="success" 
+                    showIcon 
+                    className="rounded-lg"
+                  />
+                ) : enrolledCourses[course.id] === 'REJECTED' ? (
+                  <Alert 
+                    message="Rejected" 
+                    type="error" 
                     showIcon 
                     className="rounded-lg"
                   />
@@ -282,6 +347,9 @@ export default function MyInternship() {
             </Card>
           </Col>
         ))}
+        {availableInternships.length === 0 && !internshipsLoading && (
+          <div className="col-span-full py-16 text-center text-slate-500 text-lg">No internships available right now.</div>
+        )}
       </Row>
     </div>
   );

@@ -134,7 +134,7 @@ export async function GET(req: Request) {
 
     if (format === 'pdf') {
       const pdfBuffer = await buildPdf(metrics);
-      return new NextResponse(pdfBuffer, {
+      return new NextResponse(pdfBuffer as any, {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',
@@ -156,7 +156,7 @@ export async function GET(req: Request) {
       worksheet.addRow({ metric: 'Overall Attendance (%)', value: metrics.attendance });
       
       const csvBuffer = await workbook.csv.writeBuffer();
-      return new NextResponse(csvBuffer, {
+      return new NextResponse(csvBuffer as any, {
         status: 200,
         headers: {
           'Content-Type': 'text/csv',

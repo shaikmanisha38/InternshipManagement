@@ -1,6 +1,7 @@
 import React from 'react';
 import useSWR from 'swr';
-import { Progress, Timeline, Spin } from 'antd';
+import { Progress, Timeline, Spin, Button, Table, Tag, message } from 'antd';
+import { mutate } from 'swr';
 import {
   Users,
   Award,
@@ -45,6 +46,71 @@ export default function MentorOverview() {
   const { data: trendsData, error: trendsError, isLoading: isTrendsLoading } = useSWR('/api/v1/mentor/activity-trends', fetcher, {
     refreshInterval: 5000, // Poll every 5 seconds
   });
+
+  const { data: enrollmentsData } = useSWR('/api/v1/mentor/enrollments', fetcher, {
+    refreshInterval: 10000,
+  });
+
+  const handleApproval = async (id, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/v1/mentor/enrollments/${id}/${action}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        message.success(`Enrollment ${action}d successfully`);
+        mutate('/api/v1/mentor/enrollments');
+        mutate('/api/v1/mentor/overview');
+      } else {
+        const err = await response.json();
+        message.error(err.message || `Failed to ${action} enrollment`);
+      }
+    } catch (e) {
+      message.error(`Error ${action}ing enrollment`);
+    }
+  };
+
+  const enrollmentColumns = [
+    {
+      title: 'Student Name',
+      dataIndex: ['student', 'name'],
+      key: 'studentName',
+    },
+    {
+      title: 'Email',
+      dataIndex: ['student', 'email'],
+      key: 'email',
+    },
+    {
+      title: 'Internship',
+      dataIndex: ['internship', 'title'],
+      key: 'internshipTitle',
+    },
+    {
+      title: 'Duration',
+      dataIndex: ['internship', 'duration'],
+      key: 'duration',
+    },
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      render: (_, record) => (
+        <div className="flex gap-2">
+          <Button type="primary" size="small" onClick={() => handleApproval(record.id, 'approve')}>Approve</Button>
+          <Button danger size="small" onClick={() => handleApproval(record.id, 'reject')}>Reject</Button>
+        </div>
+      ),
+    },
+  ];
 
   if (isOverviewLoading || isTrendsLoading) {
     return (
@@ -106,6 +172,25 @@ export default function MentorOverview() {
           <h1 className="text-2xl font-bold text-[#0F172A]">Mentor Dashboard</h1>
           <p className="text-[#475569]">Overview of student performance and daily actionable metrics.</p>
         </div>
+
+        {/* Pending Enrollments Section */}
+        {enrollmentsData?.enrollments && (
+          <div className="bg-white rounded-xl shadow-sm shadow-blue-900/5 p-6 border border-amber-200 mb-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
+            <h3 className="text-lg font-bold text-[#0F172A] mb-4 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              Pending Enrollment Requests ({enrollmentsData.enrollments.length})
+            </h3>
+            <Table 
+              dataSource={enrollmentsData.enrollments} 
+              columns={enrollmentColumns} 
+              rowKey="id"
+              pagination={{ pageSize: 5 }}
+              size="middle"
+              locale={{ emptyText: 'No pending enrollment requests at this time.' }}
+            />
+          </div>
+        )}
 
         {/* ZONE 1: CORE OPERATIONAL METRICS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

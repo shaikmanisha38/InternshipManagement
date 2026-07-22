@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import useSWR from 'swr';
 import { 
-  Card, Input, Select, Table, Drawer, Tabs, Button, Tag, Avatar, Progress, Spin
+  Card, Input, Select, Table, Drawer, Tabs, Button, Tag, Avatar, Progress, Spin, message
 } from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
 import { 
@@ -42,6 +42,70 @@ export default function MentorStudents() {
   const { data, error, isLoading } = useSWR(apiUrl, fetcher, {
     refreshInterval: 10000, // Poll every 10 seconds
   });
+
+  const { data: enrollmentsData, mutate: mutateEnrollments } = useSWR('/api/v1/mentor/enrollments', fetcher, {
+    refreshInterval: 10000,
+  });
+
+  const handleApproval = async (id, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/v1/mentor/enrollments/${id}/${action}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        message.success(`Enrollment ${action}d successfully`);
+        mutateEnrollments();
+      } else {
+        const err = await response.json();
+        message.error(err.message || `Failed to ${action} enrollment`);
+      }
+    } catch (e) {
+      message.error(`Error ${action}ing enrollment`);
+    }
+  };
+
+  const enrollmentColumns = [
+    {
+      title: 'Student Name',
+      dataIndex: ['student', 'name'],
+      key: 'studentName',
+    },
+    {
+      title: 'Email',
+      dataIndex: ['student', 'email'],
+      key: 'email',
+    },
+    {
+      title: 'Internship',
+      dataIndex: ['internship', 'title'],
+      key: 'internshipTitle',
+    },
+    {
+      title: 'Duration',
+      dataIndex: ['internship', 'duration'],
+      key: 'duration',
+    },
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      render: (_, record) => (
+        <div className="flex gap-2">
+          <Button type="primary" size="small" onClick={() => handleApproval(record.id, 'approve')}>Approve</Button>
+          <Button danger size="small" onClick={() => handleApproval(record.id, 'reject')}>Reject</Button>
+        </div>
+      ),
+    },
+  ];
 
   const handleRowClick = (record) => {
     setSelectedStudent(record);
@@ -138,6 +202,25 @@ export default function MentorStudents() {
           <h1 className="text-2xl font-bold text-[#0F172A]">Students Management</h1>
           <p className="text-[#475569]">Comprehensive directory and tracking for assigned interns.</p>
         </div>
+
+        {/* Pending Enrollments Section */}
+        {enrollmentsData?.enrollments && (
+          <div className="bg-white rounded-xl shadow-sm shadow-blue-900/5 p-6 border border-amber-200 mb-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
+            <h3 className="text-lg font-bold text-[#0F172A] mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Pending Enrollment Requests ({enrollmentsData.enrollments.length})
+            </h3>
+            <Table 
+              dataSource={enrollmentsData.enrollments} 
+              columns={enrollmentColumns} 
+              rowKey="id"
+              pagination={{ pageSize: 5 }}
+              size="middle"
+              locale={{ emptyText: 'No pending enrollment requests at this time.' }}
+            />
+          </div>
+        )}
 
         {/* ZONE 1: GLOBAL CONTROL BAR */}
         <Card className="rounded-xl shadow-sm shadow-blue-900/5 border border-slate-100"  styles={{ body: { padding: '20px' } }}>

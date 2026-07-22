@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     const userId = (decoded.payload as any).id as string;
 
     const githubAccount = await prisma.githubAccount.findFirst({
-      where: { studentId: userId },
+      where: { userId: userId },
     });
 
     if (!githubAccount) {

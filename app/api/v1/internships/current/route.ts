@@ -4,6 +4,8 @@ import { jwtVerify } from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     // 1. Authenticate user
@@ -50,19 +52,14 @@ export async function GET(req: Request) {
     }
 
     // 3. Format response for MyInternship.jsx
-    // Note: The frontend expects the response to have { internship: { ...details, mentor: { ... } } }
-    const formattedInternship = {
-      ...studentInternship.internship,
-      mentor: studentInternship.internship.mentor,
-      studentProgress: {
-        currentWeek: studentInternship.currentWeek,
-        currentDay: studentInternship.currentDay,
-        progress: studentInternship.progress,
-        startDate: studentInternship.startDate,
-      }
-    };
-
-    return NextResponse.json({ internship: formattedInternship });
+    return NextResponse.json({ 
+      internship: studentInternship.internship,
+      currentWeek: studentInternship.currentWeek,
+      currentDay: studentInternship.currentDay,
+      progress: studentInternship.progress,
+      startDate: studentInternship.startDate,
+      endDate: studentInternship.endDate
+    });
   } catch (error: any) {
     console.error('Error fetching current internship:', error);
     return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });

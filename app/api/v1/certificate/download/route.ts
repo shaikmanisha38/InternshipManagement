@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     }
 
     // 2. Check for Certificate Record
-    const certificate = await prisma.certificate.findUnique({
+    const certificate = await prisma.certificate.findFirst({
       where: { studentId: userId },
       include: {
         student: {
@@ -37,13 +37,13 @@ export async function GET(req: Request) {
       }
     });
 
-    if (!certificate || !certificate.certificateUrl) {
+    if (!certificate || !certificate.pdfUrl) {
       return NextResponse.json({ message: 'Certificate not found or no file available.' }, { status: 404 });
     }
 
     // 3. Cleanly fetch the asset and stream it back as a downloadable PDF Blob
     try {
-      const pdfResponse = await fetch(certificate.certificateUrl);
+      const pdfResponse = await fetch(certificate.pdfUrl);
       if (!pdfResponse.ok) {
         throw new Error('Failed to fetch the PDF asset from the source URL.');
       }
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
       });
     } catch (streamError) {
       console.warn("Failed to stream PDF blob, falling back to redirect.", streamError);
-      return NextResponse.redirect(certificate.certificateUrl);
+      return NextResponse.redirect(certificate.pdfUrl);
     }
 
   } catch (error: any) {

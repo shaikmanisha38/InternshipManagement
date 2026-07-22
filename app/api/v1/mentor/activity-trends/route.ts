@@ -121,7 +121,7 @@ export async function GET(req: Request) {
       include: { student: { select: { name: true } } }
     });
 
-    const allEvents = [];
+    const allEvents: any[] = [];
 
     recentSubmissions.forEach(sub => {
       allEvents.push({

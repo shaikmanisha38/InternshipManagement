@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     }
 
     // 2. Check for Certificate Record
-    const certificate = await prisma.certificate.findUnique({
+    const certificate = await prisma.certificate.findFirst({
       where: { studentId: userId },
       include: {
         student: {
@@ -52,10 +52,10 @@ export async function GET(req: Request) {
       success: true,
       status: 'active',
       data: {
-        certificateNumber: certificate.certificateNumber,
-        issuedDate: certificate.issuedDate,
+        certificateNumber: certificate.credentialId,
+        issuedDate: certificate.issuedAt,
         finalScore: certificate.finalScore,
-        certificateUrl: certificate.certificateUrl,
+        certificateUrl: certificate.pdfUrl,
         studentName: certificate.student.name,
       }
     });

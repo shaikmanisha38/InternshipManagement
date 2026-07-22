@@ -72,7 +72,7 @@ export async function POST(req: Request) {
           include: { aiEvaluation: true, task: { include: { roadmapDay: { include: { roadmap: true } } } } }
         });
         
-        const evaluation = await prisma.aIEvaluation.create({
+        const evaluation = await prisma.aiEvaluation.create({
           data: {
             submissionId: submission.id,
             score: 95,
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
             weaknesses: []
           }
         });
-        finalSubmission.aiEvaluation = evaluation;
+        (finalSubmission as any).aiEvaluation = evaluation;
       } catch (e) {
         console.error("Failed to mock AI evaluation:", e);
       }

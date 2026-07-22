@@ -67,7 +67,7 @@ export async function GET(req: Request) {
     const certificatesIssued = await prisma.certificate.count({
       where: {
         studentId: { in: studentIds },
-        issuedDate: { gte: oneWeekAgo }
+        issuedAt: { gte: oneWeekAgo }
       }
     });
 

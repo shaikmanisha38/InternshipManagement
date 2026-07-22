@@ -4,7 +4,7 @@ import { jwtVerify } from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // 1. Authenticate user
     const authHeader = req.headers.get('authorization');
@@ -28,7 +28,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 
     // `id` is actually the internshipId from the frontend
-    const internshipId = params.id;
+    const { id: internshipId } = await params;
     const url = new URL(req.url);
     const weekNumberStr = url.searchParams.get('weekNumber');
     
