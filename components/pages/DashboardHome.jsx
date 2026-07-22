@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, Progress, Avatar, Tag, Typography, Row, Col, Tooltip, Button, Timeline, Badge, Space, Spin, Alert } from 'antd';
 import { 
   FireFilled, 
@@ -15,6 +16,7 @@ import {
 const { Title, Text } = Typography;
 
 export default function DashboardHome() {
+  const router = useRouter();
   const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   
   const [data, setData] = useState(null);
@@ -84,6 +86,18 @@ export default function DashboardHome() {
               <div>
                 <Text className="block text-xs text-blue-200 uppercase tracking-wider font-bold">Internship</Text>
                 <Text className="text-white font-semibold">{internship ? internship.title : 'Not Enrolled'}</Text>
+              </div>
+            </div>
+
+            <div className="h-10 w-px bg-white/20 hidden sm:block"></div>
+
+            <div className="flex items-center gap-3">
+              <div className="bg-purple-500/20 p-2 rounded-lg border border-purple-500/30">
+                <CheckCircleOutlined className="text-xl text-purple-400" />
+              </div>
+              <div>
+                <Text className="block text-xs text-blue-200 uppercase tracking-wider font-bold">Applied</Text>
+                <Text className="text-white font-bold text-lg leading-tight">1</Text>
               </div>
             </div>
 
