@@ -32,10 +32,12 @@ export async function GET(req: Request) {
         id: true,
         title: true,
         description: true,
+        companyName: true,
         duration: true,
         techStack: true,
         technology: true,
         difficulty: true,
+        maxCapacity: true,
         mentorId: true,
         mentor: {
           select: {
@@ -44,6 +46,9 @@ export async function GET(req: Request) {
             email: true,
           }
         }
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
     });
 

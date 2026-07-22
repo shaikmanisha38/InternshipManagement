@@ -55,7 +55,7 @@ export default function Assessment() {
     return (
       <div className="p-4 md:p-8 bg-blue-50/50 min-h-full">
         <Alert
-          message="No Assessment Available"
+          title="No Assessment Available"
           description={data?.message || "There is no assessment scheduled for you at this time."}
           type="info"
           showIcon
@@ -137,7 +137,7 @@ export default function Assessment() {
             </div>
 
             {status === 'locked' && statusMsg && (
-              <Alert message={statusMsg} type="warning" showIcon className="mb-6 rounded-lg" />
+              <Alert title={statusMsg} type="warning" showIcon className="mb-6 rounded-lg" />
             )}
 
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-6">
@@ -196,7 +196,6 @@ export default function Assessment() {
                     type="circle"
                     percent={submission.score}
                     strokeColor={{ '0%': '#10b981', '100%': '#059669' }}
-                    strokeWidth={8}
                     size={160}
                     format={(percent) => (
                       <div className="flex flex-col items-center">

@@ -159,7 +159,6 @@ export default function DashboardHome() {
                     type="circle" 
                     percent={internship ? internship.progress.percent : 0} 
                     strokeColor={{ '0%': '#108ee9', '100%': '#87d068' }}
-                    strokeWidth={10}
                     size={100}
                     format={(percent) => <span className="font-bold text-xl">{percent}%</span>}
                   />
@@ -284,7 +283,7 @@ export default function DashboardHome() {
             <div className="bg-slate-50/80 p-4 rounded-xl mb-6 flex items-center justify-between border border-slate-100">
               <Text className="font-semibold text-slate-600">Average Score</Text>
               <div className="flex items-center gap-3">
-                <Progress type="dashboard" percent={aiFeedback.averageScore} size={42} strokeWidth={14} strokeColor="#8b5cf6" format={() => ''} />
+                <Progress type="dashboard" percent={aiFeedback.averageScore} size={42} strokeColor="#8b5cf6" format={() => ''} />
                 <span className="text-2xl font-black text-violet-600">{aiFeedback.averageScore}%</span>
               </div>
             </div>

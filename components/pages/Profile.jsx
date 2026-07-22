@@ -71,8 +71,7 @@ export default function Profile() {
               </Title>
               <Descriptions 
                 column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }} 
-                labelStyle={{ fontWeight: 'bold', color: '#64748b', width: '140px' }}
-                contentStyle={{ fontWeight: '600', color: '#0f172a' }}
+                styles={{ label: { fontWeight: 'bold', color: '#64748b', width: '140px' }, content: { fontWeight: '600', color: '#0f172a' } }}
                 colon={false}
               >
                 {/* Contact Information */}

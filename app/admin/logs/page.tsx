@@ -1,11 +1,11 @@
 "use client";
-import PlaceholderPage from '@/components/pages/PlaceholderPage';
+import AdminLogs from '@/components/pages/AdminLogs';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 
 export default function Page() {
   return (
     <DashboardLayout role="admin">
-      <PlaceholderPage title="Admin logs" />
+      <AdminLogs />
     </DashboardLayout>
   );
 }

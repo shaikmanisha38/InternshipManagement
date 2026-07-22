@@ -156,7 +156,7 @@ export default function TodaysTask() {
   if (!taskData) {
     return (
       <div className="p-8">
-        <Alert message="No Task Available" description="There is no task assigned for today." type="info" showIcon />
+        <Alert title="No Task Available" description="There is no task assigned for today." type="info" showIcon />
       </div>
     );
   }

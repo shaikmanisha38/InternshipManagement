@@ -18,10 +18,12 @@ export default function MyInternship() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // State for tracking which courses the user has clicked "Enroll" on
-  const [enrolledCourses, setEnrolledCourses] = useState({});
   const [availableInternships, setAvailableInternships] = useState([]);
-  const [internshipsLoading, setInternshipsLoading] = useState(false);
+  const [applications, setApplications] = useState([]);
+  const [loadingOthers, setLoadingOthers] = useState(true);
+  
+  // State for tracking which courses the user has clicked "Enroll" on locally before refresh
+  const [enrolledCourses, setEnrolledCourses] = useState({});
 
   useEffect(() => {
     const fetchMyInternship = async () => {
@@ -30,8 +32,7 @@ export default function MyInternship() {
         const response = await fetch('/api/v1/internships/current', {
           headers: {
             'Authorization': `Bearer ${token}`
-          },
-          cache: 'no-store'
+          }
         });
 
         if (response.status === 404) {
@@ -53,44 +54,29 @@ export default function MyInternship() {
       }
     };
 
-    fetchMyInternship();
-
-    const fetchAllInternshipsAndEnrollments = async () => {
+    const fetchOthers = async () => {
       try {
-        setInternshipsLoading(true);
         const token = localStorage.getItem('token');
-        const [internshipsRes, enrollmentsRes] = await Promise.all([
-          fetch('/api/v1/internships', { headers: { 'Authorization': `Bearer ${token}` }, cache: 'no-store' }),
-          fetch('/api/v1/student/enrollments', { headers: { 'Authorization': `Bearer ${token}` }, cache: 'no-store' })
+        const [internshipsRes, applicationsRes] = await Promise.all([
+          fetch('/api/v1/internships', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/v1/student/applications', { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         if (internshipsRes.ok) {
-          const { internships } = await internshipsRes.json();
-          const mapped = internships.map(i => ({
-            id: i.id,
-            title: i.title,
-            duration: i.duration,
-            tech: i.techStack?.length ? i.techStack : (i.technology ? i.technology.split(',').map(s => s.trim()) : []),
-            desc: i.description
-          }));
-          setAvailableInternships(mapped);
+          setAvailableInternships(await internshipsRes.json());
         }
-
-        if (enrollmentsRes.ok) {
-          const { enrollments } = await enrollmentsRes.json();
-          const enrollmentMap = {};
-          enrollments.forEach(e => {
-            enrollmentMap[e.internshipId] = e.status;
-          });
-          setEnrolledCourses(enrollmentMap);
+        if (applicationsRes.ok) {
+          setApplications(await applicationsRes.json());
         }
-      } catch (e) {
-        console.error(e);
+      } catch(e) {
+        console.error("Error fetching other data:", e);
       } finally {
-        setInternshipsLoading(false);
+        setLoadingOthers(false);
       }
     };
-    fetchAllInternshipsAndEnrollments();
+
+    fetchMyInternship();
+    fetchOthers();
   }, []);
 
   let inProgressContent = null;
@@ -274,83 +260,89 @@ export default function MyInternship() {
   const handleEnroll = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/student/enrollments', {
+      const response = await fetch('/api/v1/student/applications', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ internshipId: id })
       });
+      
       if (response.ok) {
-        setEnrolledCourses(prev => ({ ...prev, [id]: 'PENDING' }));
-      } else {
-        const err = await response.json();
-        alert(err.message || 'Failed to enroll');
+        setEnrolledCourses(prev => ({ ...prev, [id]: true }));
+        // Refresh applications
+        const appsRes = await fetch('/api/v1/student/applications', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (appsRes.ok) setApplications(await appsRes.json());
       }
     } catch (e) {
       console.error(e);
-      alert('Error enrolling');
     }
   };
 
   const allInternshipsContent = (
     <div className="py-8">
-      <Row gutter={[24, 24]}>
-        {availableInternships.map(course => (
-          <Col xs={24} md={12} lg={8} key={course.id}>
-            <Card className="rounded-2xl border-slate-200 shadow-sm h-full flex flex-col hover:shadow-md transition-shadow">
-              <div className="flex-grow">
-                <Title level={4} className="!mb-2 !mt-0">{course.title}</Title>
-                <Text className="text-slate-500 block mb-3"><ClockCircleOutlined /> {course.duration}</Text>
-                <Paragraph className="text-slate-600 mb-4">{course.desc}</Paragraph>
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {course.tech.map(t => (
-                    <Tag key={t} color="blue" className="rounded-md m-0">{t}</Tag>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="mt-auto pt-4 border-t border-slate-100">
-                {enrolledCourses[course.id] === 'PENDING' ? (
-                  <Alert 
-                    message="Enrollment Pending" 
-                    description="Contact mentor for approval." 
-                    type="warning" 
-                    showIcon 
-                    className="rounded-lg"
-                  />
-                ) : enrolledCourses[course.id] === 'APPROVED' ? (
-                  <Alert 
-                    message="Approved" 
-                    type="success" 
-                    showIcon 
-                    className="rounded-lg"
-                  />
-                ) : enrolledCourses[course.id] === 'REJECTED' ? (
-                  <Alert 
-                    message="Rejected" 
-                    type="error" 
-                    showIcon 
-                    className="rounded-lg"
-                  />
-                ) : (
-                  <Button 
-                    type="primary" 
-                    className="w-full h-10 rounded-xl font-semibold shadow-sm" 
-                    onClick={() => handleEnroll(course.id)}
-                  >
-                    Enroll Now
-                  </Button>
-                )}
-              </div>
-            </Card>
-          </Col>
-        ))}
-        {availableInternships.length === 0 && !internshipsLoading && (
-          <div className="col-span-full py-16 text-center text-slate-500 text-lg">No internships available right now.</div>
-        )}
-      </Row>
+      {loadingOthers ? (
+        <div className="flex justify-center py-8"><Spin /></div>
+      ) : (
+        <Row gutter={[24, 24]}>
+          {availableInternships.map(course => {
+            const hasApplied = applications.find(a => a.internshipId === course.id) || enrolledCourses[course.id];
+            const status = hasApplied ? hasApplied.status : null;
+            
+            return (
+              <Col xs={24} md={12} lg={8} key={course.id}>
+                <Card className="rounded-2xl border-slate-200 shadow-sm h-full flex flex-col hover:shadow-md transition-shadow">
+                  <div className="flex-grow">
+                    <Title level={4} className="!mb-2 !mt-0">{course.title}</Title>
+                    <Text className="text-slate-500 block mb-3"><ClockCircleOutlined /> {course.duration || 'N/A'}</Text>
+                    <Paragraph className="text-slate-600 mb-4">{course.description || course.companyName}</Paragraph>
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {(course.techStack || []).map(t => (
+                        <Tag key={t} color="blue" className="rounded-md m-0">{t}</Tag>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-auto pt-4 border-t border-slate-100">
+                    {status === 'PENDING' || enrolledCourses[course.id] ? (
+                      <Alert 
+                        title="Application Pending" 
+                        description="Waiting for mentor approval" 
+                        type="warning" 
+                        showIcon 
+                        className="rounded-lg"
+                      />
+                    ) : status === 'ACCEPTED' ? (
+                      <Alert 
+                        title="Accepted!" 
+                        type="success" 
+                        showIcon 
+                        className="rounded-lg"
+                      />
+                    ) : status === 'REJECTED' ? (
+                       <Alert 
+                        title="Application Rejected" 
+                        type="error" 
+                        showIcon 
+                        className="rounded-lg"
+                      />
+                    ) : (
+                      <Button 
+                        type="primary" 
+                        className="w-full h-10 rounded-xl font-semibold shadow-sm" 
+                        onClick={() => handleEnroll(course.id)}
+                      >
+                        Apply Now
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              </Col>
+            );
+          })}
+        </Row>
+      )}
     </div>
   );
 
