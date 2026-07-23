@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     if (!userId) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
     const githubAccount = await prisma.githubAccount.findFirst({
-      where: { studentId: userId },
+      where: { userId },
     });
 
     if (!githubAccount || !githubAccount.accessToken) {
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     }
 
     const githubAccount = await prisma.githubAccount.findFirst({
-      where: { studentId: userId },
+      where: { userId },
     });
 
     if (!githubAccount || !githubAccount.accessToken) {

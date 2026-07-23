@@ -70,14 +70,14 @@ export async function POST(req: Request) {
     // 3. Save to database
     // Upsert the GitHub account for this student
     const existingAccount = await prisma.githubAccount.findFirst({
-      where: { studentId: userId },
+      where: { userId },
     });
 
     if (existingAccount) {
       await prisma.githubAccount.update({
         where: { id: existingAccount.id },
         data: {
-          githubId: String(userData.id),
+          githubUserId: String(userData.id),
           username: userData.login,
           accessToken,
         },
@@ -85,8 +85,8 @@ export async function POST(req: Request) {
     } else {
       await prisma.githubAccount.create({
         data: {
-          studentId: userId,
-          githubId: String(userData.id),
+          userId,
+          githubUserId: String(userData.id),
           username: userData.login,
           accessToken,
         },

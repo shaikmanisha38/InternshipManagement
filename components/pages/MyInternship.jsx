@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Card, Progress, Avatar, Tag, Typography, Row, Col, Divider, Spin, Alert, Tabs, Button } from 'antd';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Card, Progress, Avatar, Tag, Typography, Row, Col, Divider, Spin, Alert, Tabs, Button, message } from 'antd';
 import {
   CalendarOutlined,
   ClockCircleOutlined,
@@ -8,7 +9,9 @@ import {
   CheckCircleFilled,
   MailOutlined,
   BankOutlined,
-  UserOutlined
+  UserOutlined,
+  GithubOutlined,
+  DisconnectOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -25,7 +28,37 @@ export default function MyInternship() {
   // State for tracking which courses the user has clicked "Enroll" on locally before refresh
   const [enrolledCourses, setEnrolledCourses] = useState({});
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // GitHub status state
+  const [githubStatus, setGithubStatus] = useState({ isConnected: false, clientId: null });
+
   useEffect(() => {
+    const handleOAuthCallback = async (code) => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/v1/github/auth', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}` 
+          },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (data.success) {
+          message.success('Successfully connected to GitHub!');
+        } else {
+          message.error(data.message || 'Failed to connect');
+        }
+      } catch (err) {
+        message.error('An error occurred during authentication');
+      } finally {
+        router.replace('/student/dashboard/internships'); // Adjust if route differs
+        fetchGithubStatus();
+      }
+    };
     const fetchMyInternship = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -75,9 +108,31 @@ export default function MyInternship() {
       }
     };
 
+    const fetchGithubStatus = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/v1/github/status', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setGithubStatus(data);
+        }
+      } catch(e) {
+        console.error("Error fetching github status:", e);
+      }
+    };
+
     fetchMyInternship();
     fetchOthers();
-  }, []);
+    
+    const code = searchParams.get('code');
+    if (code) {
+      handleOAuthCallback(code);
+    } else {
+      fetchGithubStatus();
+    }
+  }, [searchParams]);
 
   let inProgressContent = null;
 
@@ -237,6 +292,68 @@ export default function MyInternship() {
                     <Text className="text-slate-700 font-medium">{mentor.department || 'Engineering'}</Text>
                   </div>
                 </div>
+              </div>
+            </Card>
+
+            {/* GITHUB INTEGRATION CARD */}
+            <Card className="rounded-2xl border-slate-200 shadow-sm sticky top-8 mt-8" styles={{ body: { padding: 0 } }}>
+              <div className="bg-slate-100 p-6 flex flex-col items-center justify-center border-b border-slate-200 rounded-t-2xl">
+                <Avatar
+                  size={96}
+                  src={githubStatus.isConnected ? `https://github.com/${githubStatus.username}.png` : null}
+                  icon={!githubStatus.isConnected ? <GithubOutlined /> : null}
+                  className={`shadow-md border-4 border-white mb-4 ${!githubStatus.isConnected ? 'bg-slate-200 text-slate-400' : 'bg-white text-blue-500'}`}
+                />
+                <Tag color={githubStatus.isConnected ? "success" : "default"} className="rounded-full px-3 uppercase tracking-wider text-xs font-bold mb-2">
+                  Status: {githubStatus.isConnected ? 'Connected' : 'Not Connected'}
+                </Tag>
+                <Title level={4} className="!mb-1 text-slate-800 text-center">GitHub</Title>
+              </div>
+
+              <div className="p-6 space-y-5 text-center">
+                {githubStatus.isConnected ? (
+                  <>
+                    <div>
+                      <Text className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-1 block">Username</Text>
+                      <Text className="text-slate-700 font-medium">@{githubStatus.username}</Text>
+                    </div>
+                    <Button 
+                      type="default" 
+                      danger
+                      icon={<DisconnectOutlined />}
+                      className="w-full rounded-xl font-bold"
+                      onClick={() => {
+                        /* Provide dummy disconnect logic or link */
+                      }}
+                    >
+                      Disconnect
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Text className="text-slate-500 text-sm mb-4 block">
+                      Connect your GitHub account to sync your repositories and track your coding progress.
+                    </Text>
+                    <Button 
+                      type="primary" 
+                      icon={<GithubOutlined />}
+                      className="w-full rounded-xl font-bold bg-slate-900 hover:bg-slate-800"
+                      size="large"
+                      onClick={() => {
+                        if (githubStatus.clientId) {
+                          // Redirect to GithubAuth
+                          window.location.href = `https://github.com/login/oauth/authorize?client_id=${githubStatus.clientId}&scope=repo`;
+                        } else {
+                          // clientId not loaded or available
+                          console.error('Github clientId not found');
+                          message.error('GitHub Client ID is not configured in your .env file!');
+                        }
+                      }}
+                    >
+                      Connect GitHub
+                    </Button>
+                  </>
+                )}
               </div>
             </Card>
           </Col>
