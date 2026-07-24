@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose';
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -30,7 +30,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ message: 'Invalid status' }, { status: 400 });
     }
 
-    const applicationId = params.id;
+    const resolvedParams = await params;
+    const applicationId = resolvedParams.id;
 
     const application = await prisma.internshipApplication.findUnique({
       where: { id: applicationId }

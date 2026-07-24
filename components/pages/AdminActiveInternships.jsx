@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Button, Card, Space, Progress } from 'antd';
-import { Eye, UserSwitch, CheckCircle } from 'lucide-react';
+import { Eye, Users, CheckCircle } from 'lucide-react';
 
 export default function AdminActiveInternships() {
   const columns = [
@@ -14,7 +14,7 @@ export default function AdminActiveInternships() {
       render: () => (
         <Space size="middle">
           <Button type="link" icon={<Eye className="w-4 h-4"/>}>View Progress</Button>
-          <Button type="link" icon={<UserSwitch className="w-4 h-4"/>}>Transfer Mentor</Button>
+          <Button type="link" icon={<Users className="w-4 h-4"/>}>Transfer Mentor</Button>
           <Button type="link" className="text-green-600" icon={<CheckCircle className="w-4 h-4"/>}>Complete Internship</Button>
         </Space>
       )

@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       safeCount(prisma.user.count({ where: { role: { roleName: 'STUDENT' } } })),
       safeCount(prisma.user.count({ where: { role: { roleName: 'MENTOR' } } })),
       safeCount(prisma.internship.count()),
-      safeCount(prisma.internshipApplication.count({ where: { status: 'PENDING' } })),
+      safeCount(prisma.enrollment.count({ where: { status: 'PENDING' } })),
       safeCount(prisma.studentInternship.count({ where: { status: 'ONGOING' } })),
       safeCount(prisma.studentInternship.count({ where: { status: 'COMPLETED' } })),
       safeCount(prisma.certificate.count())

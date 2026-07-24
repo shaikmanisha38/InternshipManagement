@@ -63,7 +63,8 @@ export default function MyInternship() {
         ]);
         
         if (internshipsRes.ok) {
-          setAvailableInternships(await internshipsRes.json());
+          const res = await internshipsRes.json();
+          setAvailableInternships(res.internships || res || []);
         }
         if (applicationsRes.ok) {
           setApplications(await applicationsRes.json());

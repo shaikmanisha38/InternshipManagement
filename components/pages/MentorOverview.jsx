@@ -115,7 +115,7 @@ export default function MentorOverview() {
   if (isOverviewLoading || isTrendsLoading) {
     return (
       <div className="-m-8 p-8 bg-[#F0F4F8] min-h-[calc(100vh-5rem)] flex items-center justify-center">
-        <Spin size="large" tip="Loading Dashboard Metrics..." />
+        <Spin size="large" description="Loading Dashboard Metrics..." />
       </div>
     );
   }
@@ -254,28 +254,28 @@ export default function MentorOverview() {
                   <span>Completed</span>
                   <span>{pipeline.completed} ({getPercent(pipeline.completed)}%)</span>
                 </div>
-                <Progress percent={getPercent(pipeline.completed)} strokeColor="#10b981" showInfo={false} size="default" />
+                <Progress percent={getPercent(pipeline.completed)} strokeColor="#10b981" showInfo={false} size="medium" />
               </div>
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>In Progress</span>
                   <span>{pipeline.inProgress} ({getPercent(pipeline.inProgress)}%)</span>
                 </div>
-                <Progress percent={getPercent(pipeline.inProgress)} strokeColor="#3b82f6" showInfo={false} size="default" />
+                <Progress percent={getPercent(pipeline.inProgress)} strokeColor="#3b82f6" showInfo={false} size="medium" />
               </div>
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>Inactive</span>
                   <span>{pipeline.inactive} ({getPercent(pipeline.inactive)}%)</span>
                 </div>
-                <Progress percent={getPercent(pipeline.inactive)} strokeColor="#94a3b8" showInfo={false} size="default" />
+                <Progress percent={getPercent(pipeline.inactive)} strokeColor="#94a3b8" showInfo={false} size="medium" />
               </div>
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>Behind Schedule</span>
                   <span>{pipeline.behindSchedule} ({getPercent(pipeline.behindSchedule)}%)</span>
                 </div>
-                <Progress percent={getPercent(pipeline.behindSchedule)} strokeColor="#f59e0b" showInfo={false} size="default" />
+                <Progress percent={getPercent(pipeline.behindSchedule)} strokeColor="#f59e0b" showInfo={false} size="medium" />
               </div>
             </div>
           </div>

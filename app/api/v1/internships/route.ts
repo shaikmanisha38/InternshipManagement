@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     // 2. Fetch all open internships
     const internships = await prisma.internship.findMany({
       where: {
-        status: { in: ['OPEN', 'Active'] }
+        status: 'OPEN'
       },
       select: {
         id: true,

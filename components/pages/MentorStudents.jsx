@@ -1,122 +1,70 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  Card, Input, Select, Table, Drawer, Tabs, Button, Tag, Avatar, Progress, Space 
+  Card, Input, Select, Table, Drawer, Tabs, Button, Tag, Avatar, Progress, Space, Badge, Empty
 } from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
 import { 
-  Search, Download, CheckCircle, XCircle, AlertTriangle, FileText, Send
+  Search, Download, CheckCircle, XCircle, AlertTriangle, FileText, Send, Award
 } from 'lucide-react';
+import useSWR from 'swr';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-// --- MOCK DATA ---
-const studentData = [
-  {
-    key: '1',
-    name: 'Emily Chen',
-    email: 'emily.chen@university.edu',
-    avatar: 'https://i.pravatar.cc/150?u=emily',
-    college: 'State Tech University',
-    department: 'Computer Science',
-    week: 4,
-    day: 18,
-    progress: 75,
-    attendance: 92,
-    aiScore: 88,
-    status: 'Active',
-    github: 'emilyc-dev'
-  },
-  {
-    key: '2',
-    name: 'Marcus Johnson',
-    email: 'mjohnson99@college.edu',
-    avatar: 'https://i.pravatar.cc/150?u=marcus',
-    college: 'National Institute',
-    department: 'Information Tech',
-    week: 3,
-    day: 14,
-    progress: 45,
-    attendance: 65,
-    aiScore: 72,
-    status: 'Behind Schedule',
-    github: 'marcus-j-codes'
-  },
-  {
-    key: '3',
-    name: 'Sarah Williams',
-    email: 'swilliams@tech.edu',
-    avatar: 'https://i.pravatar.cc/150?u=sarah',
-    college: 'Global Engineering',
-    department: 'Software Eng',
-    week: 5,
-    day: 25,
-    progress: 100,
-    attendance: 98,
-    aiScore: 95,
-    status: 'Completed',
-    github: 'sarah-w-eng'
-  },
-  {
-    key: '4',
-    name: 'David Kim',
-    email: 'dkim@university.edu',
-    avatar: 'https://i.pravatar.cc/150?u=david',
-    college: 'State Tech University',
-    department: 'Computer Science',
-    week: 2,
-    day: 10,
-    progress: 20,
-    attendance: 15,
-    aiScore: 40,
-    status: 'Inactive',
-    github: 'dkim-student'
-  },
-  {
-    key: '5',
-    name: 'Priya Patel',
-    email: 'ppatel@institute.edu',
-    avatar: 'https://i.pravatar.cc/150?u=priya',
-    college: 'National Institute',
-    department: 'Data Science',
-    week: 4,
-    day: 20,
-    progress: 80,
-    attendance: 95,
-    aiScore: 91,
-    status: 'Active',
-    github: 'priya-data'
+const fetcher = async (url) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch data');
   }
-];
+  const result = await res.json();
+  return result;
+};
 
 export default function MentorStudents() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   
-  const [applications, setApplications] = useState([]);
-  const [loadingApps, setLoadingApps] = useState(true);
+  // Controlled filter states
+  const [search, setSearch] = useState('');
+  const [batch, setBatch] = useState('all');
+  const [dept, setDept] = useState('all');
+  const [status, setStatus] = useState('all');
 
-  useEffect(() => {
-    fetchApplications();
-  }, []);
+  // Build query string dynamically for students
+  const queryParams = new URLSearchParams();
+  if (search) queryParams.append('search', search);
+  if (batch !== 'all') queryParams.append('batch', batch);
+  if (dept !== 'all') queryParams.append('dept', dept);
+  if (status !== 'all') queryParams.append('status', status);
 
-  const fetchApplications = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/mentor/applications', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setApplications(data);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingApps(false);
-    }
-  };
+  // SWR Hooks with 5-second polling interval for real-time updates
+  const { 
+    data: studentsResponse, 
+    error: studentsError, 
+    isLoading: loadingStudents, 
+    mutate: mutateStudents 
+  } = useSWR(`/api/v1/mentor/students?${queryParams.toString()}`, fetcher, {
+    refreshInterval: 5000
+  });
+
+  const { 
+    data: applications, 
+    error: appsError, 
+    isLoading: loadingApps, 
+    mutate: mutateApps 
+  } = useSWR('/api/v1/mentor/applications', fetcher, {
+    refreshInterval: 5000
+  });
+
+  const studentData = studentsResponse?.data || [];
+  const applicationsData = applications || [];
 
   const handleApplication = async (id, status) => {
     try {
@@ -130,7 +78,8 @@ export default function MentorStudents() {
         body: JSON.stringify({ status })
       });
       if (response.ok) {
-        fetchApplications(); // Refresh list
+        mutateApps();
+        mutateStudents();
       }
     } catch (e) {
       console.error(e);
@@ -297,20 +246,26 @@ export default function MentorStudents() {
                 placeholder="Search Student by Name or Email..." 
                 size="large"
                 className="rounded-lg"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <div className="flex flex-wrap gap-3">
-              <Select defaultValue="all" size="large" className="w-32" popupMatchSelectWidth={false}>
+              <Select value={batch} onChange={setBatch} size="large" className="w-32" popupMatchSelectWidth={false}>
                 <Option value="all">All Batches</Option>
-                <Option value="b1">Batch 2024-A</Option>
-                <Option value="b2">Batch 2024-B</Option>
+                <Option value="2023">Batch 2023</Option>
+                <Option value="2024">Batch 2024</Option>
+                <Option value="2025">Batch 2025</Option>
+                <Option value="2026">Batch 2026</Option>
               </Select>
-              <Select defaultValue="all" size="large" className="w-36" popupMatchSelectWidth={false}>
+              <Select value={dept} onChange={setDept} size="large" className="w-36" popupMatchSelectWidth={false}>
                 <Option value="all">All Depts</Option>
-                <Option value="cs">Computer Science</Option>
-                <Option value="it">Information Tech</Option>
+                <Option value="CS">Computer Science</Option>
+                <Option value="IT">Information Tech</Option>
+                <Option value="SE">Software Eng</Option>
+                <Option value="DS">Data Science</Option>
               </Select>
-              <Select defaultValue="all" size="large" className="w-32" popupMatchSelectWidth={false}>
+              <Select value={status} onChange={setStatus} size="large" className="w-32" popupMatchSelectWidth={false}>
                 <Option value="all">Any Status</Option>
                 <Option value="active">Active</Option>
                 <Option value="behind">Behind Schedule</Option>
@@ -327,22 +282,29 @@ export default function MentorStudents() {
                 <Table 
                   columns={columns} 
                   dataSource={studentData} 
+                  loading={loadingStudents}
                   pagination={{ pageSize: 7 }}
                   onRow={(record) => ({
                     onClick: () => handleRowClick(record),
                     className: 'cursor-pointer hover:bg-slate-50 transition-colors'
                   })}
                   className="mt-4 border border-slate-200 rounded-lg overflow-hidden"
+                  locale={{
+                    emptyText: <Empty description="No enrolled students found matching the filters." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  }}
                 />
               </TabPane>
-              <TabPane tab={<Badge count={applications.length} offset={[10, 0]}>Pending Applications</Badge>} key="2">
+              <TabPane tab={<Badge count={applicationsData.length} offset={[10, 0]}>Pending Applications</Badge>} key="2">
                  <Table 
                   columns={applicationColumns} 
-                  dataSource={applications} 
+                  dataSource={applicationsData} 
                   rowKey="id"
                   loading={loadingApps}
                   pagination={{ pageSize: 7 }}
                   className="mt-4 border border-slate-200 rounded-lg overflow-hidden"
+                  locale={{
+                    emptyText: <Empty description="No pending applications found." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  }}
                 />
               </TabPane>
             </Tabs>

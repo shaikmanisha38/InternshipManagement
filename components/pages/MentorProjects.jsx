@@ -1,75 +1,77 @@
 "use client";
 import React, { useState } from 'react';
 import { 
-  Table, Drawer, Tabs, Tag, Avatar, Progress, Button, Modal, Form, Input, Select, Tooltip 
+  Table, Drawer, Tabs, Tag, Avatar, Progress, Button, Modal, Form, Input, Select, Tooltip, Empty, message 
 } from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
 import { 
   Calendar, CheckCircle2, Edit3, Trash2, Plus, FileText, Video, Link as LinkIcon, BookOpen, Clock, Activity, Target
 } from 'lucide-react';
+import useSWR from 'swr';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
 const { TextArea } = Input;
 
-// --- MOCK DATA ---
-const projectData = [
-  {
-    key: '1',
-    name: 'Full Stack E-Commerce Platform',
-    duration: '8 Weeks',
-    students: ['https://i.pravatar.cc/150?u=1', 'https://i.pravatar.cc/150?u=2', 'https://i.pravatar.cc/150?u=3', 'https://i.pravatar.cc/150?u=4'],
-    completion: 65,
-    status: 'Active',
-    difficulty: 'Advanced',
-    techStack: ['React', 'Node.js', 'MongoDB', 'Tailwind'],
-    outcomes: ['Build scalable REST APIs', 'Implement JWT Authentication', 'State management with Redux', 'Deploy to AWS'],
-    mentor: { name: 'Dr. Alan Turing', role: 'Senior Architect', avatar: 'https://i.pravatar.cc/150?u=mentor1' },
-    roadmap: [
-      {
-        week: 1,
-        days: [
-          { day: 1, title: 'Environment Setup', output: 'GitHub Repo Initialized', difficulty: 'Beginner', desc: 'Install Node, React, and setup Tailwind CSS.' },
-          { day: 2, title: 'Database Design', output: 'ERD Diagram', difficulty: 'Intermediate', desc: 'Design the MongoDB schema for Users and Products.' }
-        ]
-      }
-    ]
-  },
-  {
-    key: '2',
-    name: 'Machine Learning Data Pipeline',
-    duration: '6 Weeks',
-    students: ['https://i.pravatar.cc/150?u=5', 'https://i.pravatar.cc/150?u=6'],
-    completion: 10,
-    status: 'Draft',
-    difficulty: 'Intermediate',
-    techStack: ['Python', 'TensorFlow', 'Pandas', 'AWS S3'],
-    outcomes: ['Data cleaning workflows', 'Model training and validation', 'API serving with FastAPI'],
-    mentor: { name: 'Ada Lovelace', role: 'Data Scientist', avatar: 'https://i.pravatar.cc/150?u=mentor2' },
-    roadmap: []
-  },
-  {
-    key: '3',
-    name: 'UI/UX Design System',
-    duration: '4 Weeks',
-    students: ['https://i.pravatar.cc/150?u=7', 'https://i.pravatar.cc/150?u=8', 'https://i.pravatar.cc/150?u=9'],
-    completion: 100,
-    status: 'Completed',
-    difficulty: 'Beginner',
-    techStack: ['Figma', 'Storybook', 'React', 'CSS'],
-    outcomes: ['Component library creation', 'Design token architecture', 'Interactive prototyping'],
-    mentor: { name: 'Steve Jobs', role: 'Design Lead', avatar: 'https://i.pravatar.cc/150?u=mentor3' },
-    roadmap: []
+const fetcher = async (url) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch data');
   }
-];
+  return res.json();
+};
+
+const fallbackProjectData = {
+  difficulty: 'Intermediate',
+  techStack: ['React', 'Node.js', 'PostgreSQL', 'Prisma', 'Tailwind CSS'],
+  outcomes: [
+    'Build and structure clean REST APIs',
+    'Secure applications with modern JWT authentication',
+    'Manage states and side-effects properly',
+    'Deploy applications using Docker & Cloud instances'
+  ],
+  roadmap: [
+    {
+      week: 1,
+      days: [
+        { day: 1, title: 'Environment Setup', output: 'Initialized Project Workspace', difficulty: 'Beginner', desc: 'Configure initial project repository, database connection, and basic folder layouts.' },
+        { day: 2, title: 'API Routes & Models', output: 'Prisma Models & API endpoint', difficulty: 'Intermediate', desc: 'Create relational DB models and hook them to server-side logic.' }
+      ]
+    }
+  ]
+};
 
 export default function MentorProjects() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   
-  // Modal State
+  // Lesson Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
+
+  // New Project Modal State
+  const [newProjectModalVisible, setNewProjectModalVisible] = useState(false);
+  const [projectForm] = Form.useForm();
+
+  // SWR hooks for fetching projects and student directory (for assignments)
+  const { 
+    data: projectsList, 
+    isLoading: loadingProjects, 
+    mutate: mutateProjects 
+  } = useSWR('/api/v1/mentor/projects', fetcher, {
+    refreshInterval: 5000
+  });
+
+  const { data: studentsResponse } = useSWR('/api/v1/mentor/students', fetcher);
+  const studentsList = studentsResponse?.data || [];
+
+  const projects = projectsList || [];
 
   const handleRowClick = (record) => {
     setSelectedProject(record);
@@ -85,6 +87,42 @@ export default function MentorProjects() {
     console.log('New Task:', values);
     setModalVisible(false);
   };
+
+  const handleNewProjectSubmit = async (values) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/mentor/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(values)
+      });
+      if (response.ok) {
+        message.success('Project created successfully!');
+        setNewProjectModalVisible(false);
+        projectForm.resetFields();
+        mutateProjects();
+      } else {
+        const errorData = await response.json();
+        message.error(errorData.message || 'Failed to create project.');
+      }
+    } catch (e) {
+      console.error(e);
+      message.error('An unexpected error occurred.');
+    }
+  };
+
+  // Helper to merge selected database project with fallback curriculum and details
+  const projectDetail = selectedProject ? {
+    ...selectedProject,
+    difficulty: selectedProject.difficulty || fallbackProjectData.difficulty,
+    techStack: selectedProject.techStack || fallbackProjectData.techStack,
+    outcomes: selectedProject.outcomes || fallbackProjectData.outcomes,
+    roadmap: selectedProject.roadmap || fallbackProjectData.roadmap,
+    mentor: selectedProject.mentor || { name: 'Lead Mentor', avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=Mentor`, role: 'Lead Instructor' }
+  } : null;
 
   // --- COLUMNS CONFIGURATION ---
   const columns = [
@@ -108,9 +146,9 @@ export default function MentorProjects() {
       title: 'Students Assigned',
       key: 'students',
       render: (_, record) => (
-        <Avatar.Group maxCount={3} maxStyle={{ color: '#fff', backgroundColor: '#3b82f6' }}>
-          {record.students.map((url, i) => (
-            <Avatar key={i} src={url} />
+        <Avatar.Group max={{ count: 3, style: { color: '#fff', backgroundColor: '#3b82f6' } }}>
+          {(record.students || []).map((s, i) => (
+            <Avatar key={i} src={s.avatar} title={s.name} />
           ))}
         </Avatar.Group>
       ),
@@ -157,7 +195,13 @@ export default function MentorProjects() {
             <h1 className="text-2xl font-bold text-[#0F172A]">Projects Management</h1>
             <p className="text-[#475569]">Design and manage internship tracks and curriculums.</p>
           </div>
-          <Button type="primary" size="large" icon={<Plus className="w-4 h-4" />} className="bg-blue-600 rounded-lg">
+          <Button 
+            type="primary" 
+            size="large" 
+            icon={<Plus className="w-4 h-4" />} 
+            className="bg-blue-600 rounded-lg"
+            onClick={() => setNewProjectModalVisible(true)}
+          >
             New Project
           </Button>
         </div>
@@ -166,13 +210,17 @@ export default function MentorProjects() {
         <div className="bg-white rounded-xl shadow-sm shadow-blue-900/5 border border-slate-100 overflow-hidden">
           <Table 
             columns={columns} 
-            dataSource={projectData} 
+            dataSource={projects} 
+            loading={loadingProjects}
             pagination={false}
             onRow={(record) => ({
               onClick: () => handleRowClick(record),
               className: 'cursor-pointer hover:bg-slate-50 transition-colors'
             })}
             size="large"
+            locale={{
+              emptyText: <Empty description="No projects created yet." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            }}
           />
         </div>
 
@@ -181,11 +229,11 @@ export default function MentorProjects() {
       {/* SECTION 2: DEEP CURRICULUM WORKSPACE (DRAWER) */}
       <Drawer
         title={
-          selectedProject ? (
+          projectDetail ? (
             <div className="flex items-center justify-between pr-8">
-              <span className="font-bold text-lg text-[#0F172A]">{selectedProject.name}</span>
-              <Tag color={selectedProject.status === 'Active' ? 'success' : selectedProject.status === 'Completed' ? 'processing' : 'default'} className="rounded-full border-0">
-                {selectedProject.status}
+              <span className="font-bold text-lg text-[#0F172A]">{projectDetail.name}</span>
+              <Tag color={projectDetail.status === 'Active' ? 'success' : projectDetail.status === 'Completed' ? 'processing' : 'default'} className="rounded-full border-0">
+                {projectDetail.status}
               </Tag>
             </div>
           ) : 'Project Workspace'
@@ -195,7 +243,7 @@ export default function MentorProjects() {
         open={drawerVisible}
         styles={{ body: {} }}
       >
-        {selectedProject && (
+        {projectDetail && (
           <Tabs defaultActiveKey="1" className="mt-4 custom-tabs">
             {/* TAB A: PROJECT DETAILS OVERVIEW */}
             <TabPane tab="Project Details" key="1">
@@ -212,12 +260,12 @@ export default function MentorProjects() {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-[#0F172A] mb-2 flex items-center gap-2"><Activity className="w-4 h-4 text-amber-500"/> Difficulty Level</h4>
-                      <Tag color="warning" className="border-0 px-3 py-1 font-semibold rounded-md">{selectedProject.difficulty}</Tag>
+                      <Tag color="warning" className="border-0 px-3 py-1 font-semibold rounded-md">{projectDetail.difficulty}</Tag>
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-[#0F172A] mb-3">Technology Stack</h4>
                       <div className="flex flex-wrap gap-2">
-                        {selectedProject.techStack.map(tech => (
+                        {projectDetail.techStack.map(tech => (
                           <Tag key={tech} className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1 rounded-md text-xs font-semibold">
                             {tech}
                           </Tag>
@@ -230,7 +278,7 @@ export default function MentorProjects() {
                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                       <h4 className="text-sm font-bold text-[#0F172A] mb-3">Learning Outcomes</h4>
                       <ul className="space-y-3">
-                        {selectedProject.outcomes.map((outcome, idx) => (
+                        {projectDetail.outcomes.map((outcome, idx) => (
                           <li key={idx} className="flex items-start gap-2 text-sm text-[#475569]">
                             <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                             <span>{outcome}</span>
@@ -239,11 +287,11 @@ export default function MentorProjects() {
                       </ul>
                     </div>
                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-                      <Avatar src={selectedProject.mentor.avatar} size={50} />
+                      <Avatar src={projectDetail.mentor.avatar} size={50} />
                       <div>
                         <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-0.5">Lead Mentor</p>
-                        <p className="text-sm font-bold text-[#0F172A]">{selectedProject.mentor.name}</p>
-                        <p className="text-xs text-blue-600">{selectedProject.mentor.role}</p>
+                        <p className="text-sm font-bold text-[#0F172A]">{projectDetail.mentor.name}</p>
+                        <p className="text-xs text-blue-600">{projectDetail.mentor.role}</p>
                       </div>
                     </div>
                   </div>
@@ -262,7 +310,7 @@ export default function MentorProjects() {
                   </Button>
                 </div>
 
-                {selectedProject.roadmap.length > 0 ? selectedProject.roadmap.map(week => (
+                {projectDetail.roadmap.length > 0 ? projectDetail.roadmap.map(week => (
                   <div key={week.week} className="mb-8">
                     <h4 className="font-extrabold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
                       Week {week.week}
@@ -375,6 +423,49 @@ export default function MentorProjects() {
           <Form.Item className="mb-0 flex justify-end">
             <Button onClick={() => setModalVisible(false)} className="mr-3">Cancel</Button>
             <Button type="primary" htmlType="submit" className="bg-blue-600">Save Task</Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* NEW PROJECT MODAL */}
+      <Modal 
+        title={<span className="text-[#0F172A] font-bold">Create New Project</span>}
+        open={newProjectModalVisible} 
+        onCancel={() => setNewProjectModalVisible(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <Form form={projectForm} layout="vertical" onFinish={handleNewProjectSubmit} className="mt-4">
+          <Form.Item name="title" label="Project Title" rules={[{ required: true, message: 'Please enter project title' }]}>
+            <Input placeholder="e.g. Full-Stack SaaS Boilerplate" size="large" />
+          </Form.Item>
+
+          <div className="flex gap-4">
+            <Form.Item name="durationWeeks" label="Duration (Weeks)" rules={[{ required: true, message: 'Please enter duration' }]} className="flex-1">
+              <Input type="number" min={1} placeholder="e.g. 8" size="large" />
+            </Form.Item>
+            <Form.Item name="status" label="Project Status" rules={[{ required: true }]} className="flex-1" initialValue="Draft">
+              <Select placeholder="Select Status" size="large">
+                <Option value="Draft">Draft</Option>
+                <Option value="Active">Active</Option>
+                <Option value="Completed">Completed</Option>
+              </Select>
+            </Form.Item>
+          </div>
+
+          <Form.Item name="studentIds" label="Assign Students">
+            <Select 
+              mode="multiple" 
+              placeholder="Select students to assign" 
+              size="large"
+              optionFilterProp="label"
+              options={studentsList.map(s => ({ value: s.studentId, label: `${s.name} (${s.email})` }))}
+            />
+          </Form.Item>
+
+          <Form.Item className="mb-0 flex justify-end">
+            <Button onClick={() => setNewProjectModalVisible(false)} className="mr-3">Cancel</Button>
+            <Button type="primary" htmlType="submit" className="bg-blue-600">Create Project</Button>
           </Form.Item>
         </Form>
       </Modal>
