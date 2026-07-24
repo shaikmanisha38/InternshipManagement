@@ -104,28 +104,28 @@ export default function MentorOverview() {
                   <span>Completed</span>
                   <span>45 (36%)</span>
                 </div>
-                <Progress percent={36} strokeColor="#10b981" showInfo={false} size="default" />
+                <Progress percent={36} strokeColor="#10b981" showInfo={false} size="medium" />
               </div>
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>In Progress</span>
                   <span>58 (47%)</span>
                 </div>
-                <Progress percent={47} strokeColor="#3b82f6" showInfo={false} size="default" />
+                <Progress percent={47} strokeColor="#3b82f6" showInfo={false} size="medium" />
               </div>
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>Inactive</span>
                   <span>12 (10%)</span>
                 </div>
-                <Progress percent={10} strokeColor="#94a3b8" showInfo={false} size="default" />
+                <Progress percent={10} strokeColor="#94a3b8" showInfo={false} size="medium" />
               </div>
               <div>
                 <div className="flex justify-between text-sm font-semibold text-[#334155] mb-2">
                   <span>Behind Schedule</span>
                   <span>9 (7%)</span>
                 </div>
-                <Progress percent={7} strokeColor="#f59e0b" showInfo={false} size="default" />
+                <Progress percent={7} strokeColor="#f59e0b" showInfo={false} size="medium" />
               </div>
             </div>
           </div>
@@ -206,7 +206,7 @@ export default function MentorOverview() {
                 items={[
                   {
                     color: 'green',
-                    dot: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
+                    icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
                     content: (
                       <div className="mb-4">
                         <p className="text-sm font-semibold text-[#0F172A]">Student completed Day 15</p>
@@ -216,7 +216,7 @@ export default function MentorOverview() {
                   },
                   {
                     color: 'blue',
-                    dot: <FileText className="w-4 h-4 text-blue-500" />,
+                    icon: <FileText className="w-4 h-4 text-blue-500" />,
                     content: (
                       <div className="mb-4">
                         <p className="text-sm font-semibold text-[#0F172A]">AI evaluated Submission</p>
@@ -226,7 +226,7 @@ export default function MentorOverview() {
                   },
                   {
                     color: 'orange',
-                    dot: <Clock className="w-4 h-4 text-amber-500" />,
+                    icon: <Clock className="w-4 h-4 text-amber-500" />,
                     content: (
                       <div className="mb-4">
                         <p className="text-sm font-semibold text-[#0F172A]">Weekly Assessment Published</p>
@@ -236,7 +236,7 @@ export default function MentorOverview() {
                   },
                   {
                     color: 'purple',
-                    dot: <Award className="w-4 h-4 text-purple-500" />,
+                    icon: <Award className="w-4 h-4 text-purple-500" />,
                     content: (
                       <div className="mb-4">
                         <p className="text-sm font-semibold text-[#0F172A]">Certificate Generated</p>
@@ -246,7 +246,7 @@ export default function MentorOverview() {
                   },
                   {
                     color: 'green',
-                    dot: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
+                    icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
                     content: (
                       <div className="mb-4">
                         <p className="text-sm font-semibold text-[#0F172A]">Student completed Day 14</p>

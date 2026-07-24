@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Card, Progress, Avatar, Tag, Typography, Row, Col, Divider, Spin, Alert, Tabs, Button, message } from 'antd';
+import { Card, Progress, Avatar, Tag, Typography, Row, Col, Divider, Spin, Alert, Tabs, Button, message, Badge } from 'antd';
 import {
   CalendarOutlined,
   ClockCircleOutlined,
@@ -386,14 +386,20 @@ export default function MyInternship() {
         body: JSON.stringify({ internshipId: id })
       });
       
+      const data = await response.json();
+      
       if (response.ok) {
+        message.success('Application submitted successfully!');
         setEnrolledCourses(prev => ({ ...prev, [id]: true }));
         // Refresh applications
         const appsRes = await fetch('/api/v1/student/applications', { headers: { 'Authorization': `Bearer ${token}` } });
         if (appsRes.ok) setApplications(await appsRes.json());
+      } else {
+        message.error(data.message || 'Failed to submit application');
       }
     } catch (e) {
       console.error(e);
+      message.error('An error occurred while applying');
     }
   };
 

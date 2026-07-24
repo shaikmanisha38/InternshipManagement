@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { jwtVerify } from 'jose';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {

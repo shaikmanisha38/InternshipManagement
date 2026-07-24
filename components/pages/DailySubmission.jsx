@@ -120,7 +120,7 @@ export default function DailySubmission() {
 
       return {
         key: sub.id,
-        dot: (
+        icon: (
           <div className={`w-8 h-8 rounded-full bg-slate-50 border-2 ${isAccepted ? 'border-emerald-500' : isFailed ? 'border-red-500' : 'border-blue-500'} flex items-center justify-center z-10 relative`}>
             <Text className={`${isAccepted ? 'text-emerald-700' : isFailed ? 'text-red-700' : 'text-blue-700'} font-bold text-xs`}>D{dayNum}</Text>
           </div>

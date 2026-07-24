@@ -61,6 +61,7 @@ export default function DashboardLayout({ role = "student", children }) {
         return [
           { name: 'Overview', path: '/mentor', icon: LayoutDashboard, group: 'Overview' },
           { name: 'Students', path: '/mentor/students', icon: Users, group: 'Student Management' },
+          { name: 'Applications', path: '/mentor/applications', icon: UserCheck, group: 'Student Management' },
           { name: 'Projects', path: '/mentor/projects', icon: FolderKanban, group: 'Student Management' },
           { name: 'Attendance', path: '/mentor/attendance', icon: CalendarDays, group: 'Student Management' },
           { name: 'Assessments', path: '/mentor/assessments', icon: ClipboardCheck, group: 'Evaluation & Grading' },
@@ -77,8 +78,6 @@ export default function DashboardLayout({ role = "student", children }) {
           { name: 'Today\'s Task', path: '/dashboard/task', icon: CheckSquare, group: 'Learning & Tasks' },
           { name: 'Daily Submission', path: '/dashboard/submission', icon: UploadCloud, group: 'Learning & Tasks' },
           { name: 'Weekly Assessments', path: '/dashboard/assessments', icon: ClipboardCheck, group: 'Learning & Tasks' },
-          { name: 'GitHub Integration', path: '/dashboard/github', icon: CodeIcon, group: 'Tools & Integrations' },
-          { name: 'AI Feedback', path: '/dashboard/ai-feedback', icon: Cpu, group: 'Tools & Integrations' },
           { name: 'Progress', path: '/dashboard/progress', icon: TrendingUp, group: 'Tracking & Analytics' },
           { name: 'Attendance', path: '/dashboard/attendance', icon: CalendarDays, group: 'Tracking & Analytics' },
           { name: 'Leaderboard', path: '/dashboard/leaderboard', icon: Trophy, group: 'Gamification & Rewards' },
