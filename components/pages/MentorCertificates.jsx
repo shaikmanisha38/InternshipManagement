@@ -8,53 +8,7 @@ import {
 } from 'lucide-react';
 
 // --- MOCK DATA ---
-const credentialData = [
-  {
-    key: '1',
-    name: 'Alexandra Smith',
-    batch: 'Batch 2024-A',
-    avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
-    finalScore: 94,
-    status: 'Issued',
-    issuedDate: 'July 05, 2026'
-  },
-  {
-    key: '2',
-    name: 'David Chen',
-    batch: 'Batch 2024-B',
-    avatar: 'https://i.pravatar.cc/150?u=davidchen',
-    finalScore: 88,
-    status: 'Pending',
-    issuedDate: '--'
-  },
-  {
-    key: '3',
-    name: 'Maria Garcia',
-    batch: 'Batch 2024-A',
-    avatar: 'https://i.pravatar.cc/150?u=mariagarcia',
-    finalScore: 92,
-    status: 'Issued',
-    issuedDate: 'July 01, 2026'
-  },
-  {
-    key: '4',
-    name: 'James Wilson',
-    batch: 'Batch 2024-C',
-    avatar: 'https://i.pravatar.cc/150?u=jamesw',
-    finalScore: 78,
-    status: 'Not Generated',
-    issuedDate: '--'
-  },
-  {
-    key: '5',
-    name: 'Sophia Patel',
-    batch: 'Batch 2024-B',
-    avatar: 'https://i.pravatar.cc/150?u=sophiap',
-    finalScore: 85,
-    status: 'Pending',
-    issuedDate: '--'
-  }
-];
+const credentialData = [];
 
 export default function MentorCertificates() {
   const [drawerVisible, setDrawerVisible] = useState(false);

@@ -12,22 +12,8 @@ import {
 const { TabPane } = Tabs;
 
 // --- MOCK DATA ---
-const timeSeriesData = [
-  { name: 'Mon', activity: 4000, engagement: 2400 },
-  { name: 'Tue', activity: 3000, engagement: 1398 },
-  { name: 'Wed', activity: 2000, engagement: 9800 },
-  { name: 'Thu', activity: 2780, engagement: 3908 },
-  { name: 'Fri', activity: 1890, engagement: 4800 },
-  { name: 'Sat', activity: 2390, engagement: 3800 },
-  { name: 'Sun', activity: 3490, engagement: 4300 },
-];
-
-const behavioralData = [
-  { week: 'Week 1', completion: 85, gitCommits: 120, scores: 78 },
-  { week: 'Week 2', completion: 90, gitCommits: 150, scores: 82 },
-  { week: 'Week 3', completion: 75, gitCommits: 90, scores: 74 },
-  { week: 'Week 4', completion: 95, gitCommits: 210, scores: 89 },
-];
+const timeSeriesData = [];
+const behavioralData = [];
 
 export default function MentorAnalytics() {
   
@@ -76,9 +62,9 @@ export default function MentorAnalytics() {
               <Users className="w-4 h-4 text-blue-500" /> Active Students
             </p>
             <div className="flex items-end gap-3">
-              <h2 className="text-3xl font-extrabold text-[#0F172A]">245</h2>
-              <span className="text-sm font-bold text-emerald-500 mb-1 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> +12%
+              <h2 className="text-3xl font-extrabold text-[#0F172A]">0</h2>
+              <span className="text-sm font-bold text-slate-400 mb-1 flex items-center gap-1">
+                --
               </span>
             </div>
           </div>
@@ -88,9 +74,9 @@ export default function MentorAnalytics() {
               <CheckCircle className="w-4 h-4 text-emerald-500" /> Completed
             </p>
             <div className="flex items-end gap-3">
-              <h2 className="text-3xl font-extrabold text-[#0F172A]">89</h2>
-              <span className="text-sm font-bold text-emerald-500 mb-1 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> +5%
+              <h2 className="text-3xl font-extrabold text-[#0F172A]">0</h2>
+              <span className="text-sm font-bold text-slate-400 mb-1 flex items-center gap-1">
+                --
               </span>
             </div>
           </div>
@@ -100,9 +86,9 @@ export default function MentorAnalytics() {
               <AlertTriangle className="w-4 h-4 text-red-500" /> Dropout Rate
             </p>
             <div className="flex items-end gap-3">
-              <h2 className="text-3xl font-extrabold text-red-600">4.2%</h2>
-              <span className="text-sm font-bold text-red-500 mb-1">
-                High Risk
+              <h2 className="text-3xl font-extrabold text-red-600">0%</h2>
+              <span className="text-sm font-bold text-slate-400 mb-1">
+                --
               </span>
             </div>
           </div>
@@ -113,16 +99,16 @@ export default function MentorAnalytics() {
               <div className="flex gap-6">
                 <div>
                   <p className="text-xs font-semibold text-[#475569] mb-1">Avg Score</p>
-                  <p className="text-xl font-extrabold text-[#0F172A]">88%</p>
+                  <p className="text-xl font-extrabold text-[#0F172A]">0%</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-[#475569] mb-1"><GithubOutlined className="mr-1"/> Git Commits</p>
-                  <p className="text-xl font-extrabold text-[#0F172A]">14/wk</p>
+                  <p className="text-xl font-extrabold text-[#0F172A]">0/wk</p>
                 </div>
               </div>
             </div>
             <div className="text-center">
-              <Progress type="circle" percent={92} size={60} strokeColor="#3b82f6" format={(p) => <span className="font-bold text-[#0F172A] text-sm">{p}%</span>} />
+              <Progress type="circle" percent={0} size={60} strokeColor="#3b82f6" format={(p) => <span className="font-bold text-[#0F172A] text-sm">{p}%</span>} />
               <p className="text-xs font-semibold text-[#475569] mt-2">Attendance</p>
             </div>
           </div>

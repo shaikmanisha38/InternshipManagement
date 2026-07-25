@@ -111,11 +111,7 @@ export default function MentorReports() {
                   size="large"
                   className="w-full"
                   filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                  options={[
-                    { value: '1', label: 'Alexandra Smith (alexandra.s@university.edu)' },
-                    { value: '2', label: 'David Chen (david.c@university.edu)' },
-                    { value: '3', label: 'Maria Garcia (maria.g@university.edu)' },
-                  ]}
+                  options={[]}
                 />
               </div>
 
@@ -160,10 +156,10 @@ export default function MentorReports() {
                   <CheckCircle2 className="w-4 h-4 text-blue-500" /> Tasks Completed
                 </p>
                 <div className="flex justify-between items-end mb-1">
-                  <span className="font-extrabold text-[#0F172A] text-xl">142</span>
-                  <span className="text-sm font-semibold text-slate-400">/ 200 This Week</span>
+                  <span className="font-extrabold text-[#0F172A] text-xl">0</span>
+                  <span className="text-sm font-semibold text-slate-400">/ 0 This Week</span>
                 </div>
-                <Progress percent={71} showInfo={false} strokeColor="#3b82f6" />
+                <Progress percent={0} showInfo={false} strokeColor="#3b82f6" />
               </div>
 
               <div>
@@ -171,7 +167,7 @@ export default function MentorReports() {
                   <Users className="w-4 h-4 text-emerald-500" /> Students Active
                 </p>
                 <div className="flex items-center gap-3">
-                  <span className="font-extrabold text-[#0F172A] text-2xl">245</span>
+                  <span className="font-extrabold text-[#0F172A] text-2xl">0</span>
                   <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Current Session</span>
                 </div>
               </div>
@@ -181,7 +177,7 @@ export default function MentorReports() {
                   <AlertCircle className="w-4 h-4 text-amber-500" /> Pending Reviews
                 </p>
                 <div className="bg-amber-50 border border-amber-100 p-3 rounded-lg flex justify-between items-center">
-                  <span className="font-extrabold text-amber-600 text-xl">38</span>
+                  <span className="font-extrabold text-amber-600 text-xl">0</span>
                   <span className="text-xs font-bold text-amber-700">Immediate Action Required</span>
                 </div>
               </div>
@@ -191,7 +187,7 @@ export default function MentorReports() {
                   <Award className="w-4 h-4 text-emerald-500" /> Certificates Issued
                 </p>
                 <Tag color="success" className="bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1.5 rounded-full font-bold text-sm m-0">
-                  12 Completions This Week
+                  0 Completions This Week
                 </Tag>
               </div>
 

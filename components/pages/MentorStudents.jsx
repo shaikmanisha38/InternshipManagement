@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { 
-  Card, Input, Select, Table, Drawer, Tabs, Button, Tag, Avatar, Progress, Space 
+  Card, Input, Select, Table, Drawer, Tabs, Button, Tag, Avatar, Progress, Space, Badge 
 } from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
 import { 
@@ -11,84 +11,7 @@ import {
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-// --- MOCK DATA ---
-const studentData = [
-  {
-    key: '1',
-    name: 'Emily Chen',
-    email: 'emily.chen@university.edu',
-    avatar: 'https://i.pravatar.cc/150?u=emily',
-    college: 'State Tech University',
-    department: 'Computer Science',
-    week: 4,
-    day: 18,
-    progress: 75,
-    attendance: 92,
-    aiScore: 88,
-    status: 'Active',
-    github: 'emilyc-dev'
-  },
-  {
-    key: '2',
-    name: 'Marcus Johnson',
-    email: 'mjohnson99@college.edu',
-    avatar: 'https://i.pravatar.cc/150?u=marcus',
-    college: 'National Institute',
-    department: 'Information Tech',
-    week: 3,
-    day: 14,
-    progress: 45,
-    attendance: 65,
-    aiScore: 72,
-    status: 'Behind Schedule',
-    github: 'marcus-j-codes'
-  },
-  {
-    key: '3',
-    name: 'Sarah Williams',
-    email: 'swilliams@tech.edu',
-    avatar: 'https://i.pravatar.cc/150?u=sarah',
-    college: 'Global Engineering',
-    department: 'Software Eng',
-    week: 5,
-    day: 25,
-    progress: 100,
-    attendance: 98,
-    aiScore: 95,
-    status: 'Completed',
-    github: 'sarah-w-eng'
-  },
-  {
-    key: '4',
-    name: 'David Kim',
-    email: 'dkim@university.edu',
-    avatar: 'https://i.pravatar.cc/150?u=david',
-    college: 'State Tech University',
-    department: 'Computer Science',
-    week: 2,
-    day: 10,
-    progress: 20,
-    attendance: 15,
-    aiScore: 40,
-    status: 'Inactive',
-    github: 'dkim-student'
-  },
-  {
-    key: '5',
-    name: 'Priya Patel',
-    email: 'ppatel@institute.edu',
-    avatar: 'https://i.pravatar.cc/150?u=priya',
-    college: 'National Institute',
-    department: 'Data Science',
-    week: 4,
-    day: 20,
-    progress: 80,
-    attendance: 95,
-    aiScore: 91,
-    status: 'Active',
-    github: 'priya-data'
-  }
-];
+// Removed Mock Data
 
 export default function MentorStudents() {
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -97,9 +20,50 @@ export default function MentorStudents() {
   const [applications, setApplications] = useState([]);
   const [loadingApps, setLoadingApps] = useState(true);
 
+  const [students, setStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(true);
+
   useEffect(() => {
     fetchApplications();
+    fetchStudents();
   }, []);
+
+  const fetchStudents = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/mentor/students', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Map data to table format
+        const formattedData = data.map(student => {
+          const internship = student.studentInternships?.[0]; // Assume first active
+          return {
+            key: student.id,
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            avatar: student.profileImage || `https://i.pravatar.cc/150?u=${student.id}`,
+            college: student.college || 'N/A',
+            department: student.department || 'N/A',
+            week: internship?.currentWeek || 0,
+            day: internship?.currentDay || 0,
+            progress: internship?.progress || 0,
+            attendance: 100, // Dummy fallback for now
+            aiScore: 0, // Dummy fallback for now
+            status: internship?.status || 'No Active Internship',
+            github: student.githubAccount?.username || 'Not Connected'
+          };
+        });
+        setStudents(formattedData);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
 
   const fetchApplications = async () => {
     try {
@@ -326,7 +290,8 @@ export default function MentorStudents() {
               <TabPane tab="Enrolled Students" key="1">
                 <Table 
                   columns={columns} 
-                  dataSource={studentData} 
+                  dataSource={students}
+              loading={loadingStudents} 
                   pagination={{ pageSize: 7 }}
                   onRow={(record) => ({
                     onClick: () => handleRowClick(record),

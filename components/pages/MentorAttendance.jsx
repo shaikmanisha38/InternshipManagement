@@ -10,83 +10,9 @@ import {
 } from 'recharts';
 
 // --- MOCK DATA ---
-const attendanceTrendData = [
-  { date: 'Mon', attendance: 98 },
-  { date: 'Tue', attendance: 95 },
-  { date: 'Wed', attendance: 92 },
-  { date: 'Thu', attendance: 88 },
-  { date: 'Fri', attendance: 85 },
-  { date: 'Sat', attendance: 45 },
-  { date: 'Sun', attendance: 40 },
-];
-
-const loginVolumeData = [
-  { time: '08:00', volume: 15 },
-  { time: '09:00', volume: 120 },
-  { time: '10:00', volume: 145 },
-  { time: '11:00', volume: 130 },
-  { time: '12:00', volume: 85 },
-  { time: '13:00', volume: 110 },
-  { time: '14:00', volume: 95 },
-];
-
-const rosterData = [
-  {
-    key: '1',
-    name: 'Emily Chen',
-    batch: 'Batch 2024-A',
-    avatar: 'https://i.pravatar.cc/150?u=emily',
-    login: '08:45 AM',
-    logout: '05:15 PM',
-    hours: 8.5,
-    status: 'Present',
-    activity: { state: 'Active', color: 'bg-emerald-500' }
-  },
-  {
-    key: '2',
-    name: 'Marcus Johnson',
-    batch: 'Batch 2024-B',
-    avatar: 'https://i.pravatar.cc/150?u=marcus',
-    login: '10:30 AM',
-    logout: '04:00 PM',
-    hours: 5.5,
-    status: 'Late',
-    activity: { state: 'Idle 45m', color: 'bg-amber-500' }
-  },
-  {
-    key: '3',
-    name: 'Sarah Williams',
-    batch: 'Batch 2024-A',
-    avatar: 'https://i.pravatar.cc/150?u=sarah',
-    login: '09:00 AM',
-    logout: '06:30 PM',
-    hours: 9.5,
-    status: 'Present',
-    activity: { state: 'Active', color: 'bg-emerald-500' }
-  },
-  {
-    key: '4',
-    name: 'David Kim',
-    batch: 'Batch 2024-A',
-    avatar: 'https://i.pravatar.cc/150?u=david',
-    login: '--',
-    logout: '--',
-    hours: 0,
-    status: 'Absent',
-    activity: { state: 'Offline', color: 'bg-slate-300' }
-  },
-  {
-    key: '5',
-    name: 'Priya Patel',
-    batch: 'Batch 2024-C',
-    avatar: 'https://i.pravatar.cc/150?u=priya',
-    login: '09:15 AM',
-    logout: '05:30 PM',
-    hours: 8.2,
-    status: 'Present',
-    activity: { state: 'Disconnected', color: 'bg-slate-400' }
-  }
-];
+const attendanceTrendData = [];
+const loginVolumeData = [];
+const rosterData = [];
 
 export default function MentorAttendance() {
   const [filter, setFilter] = useState('Today');

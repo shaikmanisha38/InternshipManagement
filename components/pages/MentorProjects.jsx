@@ -12,56 +12,7 @@ const { TabPane } = Tabs;
 const { Option } = Select;
 const { TextArea } = Input;
 
-// --- MOCK DATA ---
-const projectData = [
-  {
-    key: '1',
-    name: 'Full Stack E-Commerce Platform',
-    duration: '8 Weeks',
-    students: ['https://i.pravatar.cc/150?u=1', 'https://i.pravatar.cc/150?u=2', 'https://i.pravatar.cc/150?u=3', 'https://i.pravatar.cc/150?u=4'],
-    completion: 65,
-    status: 'Active',
-    difficulty: 'Advanced',
-    techStack: ['React', 'Node.js', 'MongoDB', 'Tailwind'],
-    outcomes: ['Build scalable REST APIs', 'Implement JWT Authentication', 'State management with Redux', 'Deploy to AWS'],
-    mentor: { name: 'Dr. Alan Turing', role: 'Senior Architect', avatar: 'https://i.pravatar.cc/150?u=mentor1' },
-    roadmap: [
-      {
-        week: 1,
-        days: [
-          { day: 1, title: 'Environment Setup', output: 'GitHub Repo Initialized', difficulty: 'Beginner', desc: 'Install Node, React, and setup Tailwind CSS.' },
-          { day: 2, title: 'Database Design', output: 'ERD Diagram', difficulty: 'Intermediate', desc: 'Design the MongoDB schema for Users and Products.' }
-        ]
-      }
-    ]
-  },
-  {
-    key: '2',
-    name: 'Machine Learning Data Pipeline',
-    duration: '6 Weeks',
-    students: ['https://i.pravatar.cc/150?u=5', 'https://i.pravatar.cc/150?u=6'],
-    completion: 10,
-    status: 'Draft',
-    difficulty: 'Intermediate',
-    techStack: ['Python', 'TensorFlow', 'Pandas', 'AWS S3'],
-    outcomes: ['Data cleaning workflows', 'Model training and validation', 'API serving with FastAPI'],
-    mentor: { name: 'Ada Lovelace', role: 'Data Scientist', avatar: 'https://i.pravatar.cc/150?u=mentor2' },
-    roadmap: []
-  },
-  {
-    key: '3',
-    name: 'UI/UX Design System',
-    duration: '4 Weeks',
-    students: ['https://i.pravatar.cc/150?u=7', 'https://i.pravatar.cc/150?u=8', 'https://i.pravatar.cc/150?u=9'],
-    completion: 100,
-    status: 'Completed',
-    difficulty: 'Beginner',
-    techStack: ['Figma', 'Storybook', 'React', 'CSS'],
-    outcomes: ['Component library creation', 'Design token architecture', 'Interactive prototyping'],
-    mentor: { name: 'Steve Jobs', role: 'Design Lead', avatar: 'https://i.pravatar.cc/150?u=mentor3' },
-    roadmap: []
-  }
-];
+const projectData = [];
 
 export default function MentorProjects() {
   const [drawerVisible, setDrawerVisible] = useState(false);

@@ -11,80 +11,8 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 // --- MOCK DATA ---
-const assessmentsCatalog = [
-  {
-    id: 1,
-    week: 'Week 1 Assessment',
-    metrics: { mcqs: 30, coding: 2 },
-    status: 'Published',
-    duration: 60,
-  },
-  {
-    id: 2,
-    week: 'Week 2 Assessment',
-    metrics: { mcqs: 40, coding: 3 },
-    status: 'Scheduled',
-    duration: 90,
-  },
-  {
-    id: 3,
-    week: 'Week 3 Assessment',
-    metrics: { mcqs: 25, coding: 1 },
-    status: 'Draft',
-    duration: 45,
-  }
-];
-
-const studentResults = [
-  {
-    key: '1',
-    name: 'Emily Chen',
-    avatar: 'https://i.pravatar.cc/150?u=emily',
-    quizScore: 28,
-    maxQuiz: 30,
-    codingScore: 48,
-    maxCoding: 50,
-    totalScore: 76,
-    maxTotal: 80,
-    rank: 1
-  },
-  {
-    key: '2',
-    name: 'Marcus Johnson',
-    avatar: 'https://i.pravatar.cc/150?u=marcus',
-    quizScore: 22,
-    maxQuiz: 30,
-    codingScore: 35,
-    maxCoding: 50,
-    totalScore: 57,
-    maxTotal: 80,
-    rank: 12
-  },
-  {
-    key: '3',
-    name: 'Sarah Williams',
-    avatar: 'https://i.pravatar.cc/150?u=sarah',
-    quizScore: 29,
-    maxQuiz: 30,
-    codingScore: 45,
-    maxCoding: 50,
-    totalScore: 74,
-    maxTotal: 80,
-    rank: 2
-  },
-  {
-    key: '4',
-    name: 'David Kim',
-    avatar: 'https://i.pravatar.cc/150?u=david',
-    quizScore: 15,
-    maxQuiz: 30,
-    codingScore: 20,
-    maxCoding: 50,
-    totalScore: 35,
-    maxTotal: 80,
-    rank: 45
-  }
-];
+const assessmentsCatalog = [];
+const studentResults = [];
 
 export default function MentorAssessments() {
   const [drawerVisible, setDrawerVisible] = useState(false);
