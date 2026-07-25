@@ -210,7 +210,7 @@ export default function Certificates() {
         footer={null}
         width={1000}
         centered
-        destroyOnClose
+        destroyOnHidden
         className="[&_.ant-modal-content]:p-0 [&_.ant-modal-content]:rounded-xl [&_.ant-modal-content]:overflow-hidden [&_.ant-modal-close]:bg-white [&_.ant-modal-close]:rounded-full [&_.ant-modal-close]:m-4 [&_.ant-modal-close]:shadow-md"
       >
         <CertificateCanvas isModal={true} />

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
 
-
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
 export async function GET(req: Request) {
@@ -16,34 +15,40 @@ export async function GET(req: Request) {
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
     const userId = payload.userId as string;
-    const userRoleName = payload.role as string;
-    if (userRoleName !== 'MENTOR' && userRoleName !== 'ADMIN') {
-      return NextResponse.json({ message: 'Forbidden: Mentor access required' }, { status: 403 });
-    }
 
-    // Get all pending applications
-    const applications = await prisma.internshipApplication.findMany({
+    const studentInternship = await prisma.studentInternship.findFirst({
+      where: {
+        studentId: userId,
+        status: 'ONGOING'
+      },
       include: {
-        student: {
-          select: {
-            name: true,
-            email: true,
-            college: true
-          }
-        },
         internship: {
-          select: {
-            title: true,
-            companyName: true
+          include: {
+            roadmaps: {
+              orderBy: { weekNumber: 'asc' },
+              select: {
+                id: true,
+                weekNumber: true,
+                title: true,
+                description: true,
+                totalDays: true
+              }
+            }
           }
         }
-      },
-      orderBy: { appliedAt: 'desc' }
+      }
     });
 
-    return NextResponse.json(applications);
+    if (!studentInternship || !studentInternship.internship) {
+      return NextResponse.json({ message: 'No active internship found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      id: studentInternship.internshipId,
+      weeks: studentInternship.internship.roadmaps
+    });
   } catch (error: any) {
-    console.error('Error fetching pending applications:', error);
+    console.error('Error fetching current roadmap:', error);
     return NextResponse.json({ message: `Internal server error: ${error.message}` }, { status: 500 });
   }
 }

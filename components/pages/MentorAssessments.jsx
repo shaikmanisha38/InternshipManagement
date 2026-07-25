@@ -168,7 +168,7 @@ export default function MentorAssessments() {
       {/* ZONE 3: MENTOR AUTHORING ENGINE (DRAWER) */}
       <Drawer
         title={<span className="font-bold text-xl text-[#0F172A]">Author New Assessment</span>}
-        width={800}
+        size="large"
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
         styles={{ body: {} }}

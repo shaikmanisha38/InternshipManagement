@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Table, Tag, Button, Space, message, Popconfirm, Spin } from 'antd';
+import { Typography, Card, Table, Tag, Button, Space, message, Popconfirm, Spin, Tabs, Badge } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -133,6 +133,44 @@ export default function MentorApplications() {
     },
   ];
 
+  const enrolledColumns = [
+    {
+      title: 'Student Name',
+      dataIndex: ['student', 'name'],
+      key: 'name',
+      render: (text) => <Text strong>{text}</Text>,
+    },
+    {
+      title: 'Email',
+      dataIndex: ['student', 'email'],
+      key: 'email',
+    },
+    {
+      title: 'Enrolled Internship',
+      dataIndex: ['internship', 'title'],
+      key: 'internship',
+    },
+    {
+      title: 'Enrollment Date',
+      dataIndex: 'reviewedAt',
+      key: 'reviewedAt',
+      render: (date) => (
+        <span>
+          <ClockCircleOutlined className="mr-1 text-slate-400" />
+          {date ? dayjs(date).format('MMM D, YYYY') : '--'}
+        </span>
+      ),
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      render: () => <Tag color="success" className="font-bold">Active</Tag>,
+    },
+  ];
+
+  const pendingApps = applications.filter(app => app.status === 'PENDING');
+  const enrolledApps = applications.filter(app => app.status === 'ACCEPTED');
+
   return (
     <div className="p-4 md:p-8">
       <div className="mb-8">
@@ -142,16 +180,52 @@ export default function MentorApplications() {
         </Text>
       </div>
 
-      <Card className="rounded-xl shadow-sm border-slate-200">
-        <Table 
-          columns={columns} 
-          dataSource={applications} 
-          rowKey="id" 
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-          locale={{ emptyText: 'No pending applications found.' }}
+      <Card className="rounded-xl shadow-sm border-slate-200 overflow-hidden" styles={{ body: { padding: 0 } }}>
+        <Tabs 
+          defaultActiveKey="1" 
+          className="custom-tabs" 
+          items={[
+            {
+              key: '1',
+              label: <Badge count={pendingApps.length} offset={[10, 0]}>Pending Approvals</Badge>,
+              children: (
+                <div className="p-4">
+                  <Table 
+                    columns={columns} 
+                    dataSource={pendingApps} 
+                    rowKey="id" 
+                    loading={loading}
+                    pagination={{ pageSize: 10 }}
+                    locale={{ emptyText: 'No pending applications found.' }}
+                  />
+                </div>
+              )
+            },
+            {
+              key: '2',
+              label: 'Enrolled Students',
+              children: (
+                <div className="p-4">
+                  <Table 
+                    columns={enrolledColumns} 
+                    dataSource={enrolledApps} 
+                    rowKey="id" 
+                    loading={loading}
+                    pagination={{ pageSize: 10 }}
+                    locale={{ emptyText: 'No enrolled students found.' }}
+                  />
+                </div>
+              )
+            }
+          ]} 
         />
       </Card>
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-tabs .ant-tabs-nav::before { border-bottom: 1px solid #e2e8f0; }
+        .custom-tabs .ant-tabs-tab { color: #64748b; font-weight: 500; }
+        .custom-tabs .ant-tabs-tab-active .ant-tabs-tab-btn { color: #0F172A !important; font-weight: 600; }
+        .custom-tabs .ant-tabs-ink-bar { background: #3b82f6; }
+      `}} />
     </div>
   );
 }

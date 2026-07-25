@@ -42,7 +42,7 @@ export default function TodaysTask() {
       }
 
       // 1. Fetch current task
-      const res = await fetch('http://localhost:3000/api/v1/tasks/today', {
+      const res = await fetch('/api/v1/tasks/today', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -71,7 +71,7 @@ export default function TodaysTask() {
 
   const fetchLatestSubmission = async (taskId, token) => {
     try {
-      const subRes = await fetch(`http://localhost:3000/api/v1/submissions/task/${taskId}/latest`, {
+      const subRes = await fetch(`/api/v1/submissions/task/${taskId}/latest`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (subRes.ok) {
@@ -97,7 +97,7 @@ export default function TodaysTask() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3000/api/v1/submissions', {
+      const res = await fetch('/api/v1/submissions', {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,

@@ -9,7 +9,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart
 } from 'recharts';
 
-const { TabPane } = Tabs;
+const { TabPane } = Tabs; // DEPRECATED
 
 // --- MOCK DATA ---
 const timeSeriesData = [];
@@ -124,11 +124,11 @@ export default function MentorAnalytics() {
               <h3 className="font-bold text-lg text-[#0F172A] flex items-center gap-2">
                 <Activity className="w-5 h-5 text-blue-500" /> Platform Activity
               </h3>
-              <Tabs defaultActiveKey="1" size="small" className="custom-chart-tabs m-0">
-                <TabPane tab="Daily" key="1" />
-                <TabPane tab="Weekly" key="2" />
-                <TabPane tab="Monthly" key="3" />
-              </Tabs>
+              <Tabs defaultActiveKey="1" size="small" className="custom-chart-tabs m-0" items={[
+                { key: '1', label: 'Daily' },
+                { key: '2', label: 'Weekly' },
+                { key: '3', label: 'Monthly' }
+              ]} />
             </div>
             <div className="flex-1 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">

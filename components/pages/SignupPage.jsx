@@ -122,22 +122,7 @@ export default function SignupPage() {
               <Briefcase className="w-4 h-4" />
               Mentor
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setUserType('admin');
-                setName('');
-                setEmail('');
-                setPassword('');
-                setError('');
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${
-                userType === 'admin' ? 'bg-red-500 text-white shadow-lg' : 'text-textMuted hover:text-white'
-              }`}
-            >
-              <ShieldAlert className="w-4 h-4" />
-              Admin
-            </button>
+
           </div>
 
           <div className="space-y-4">

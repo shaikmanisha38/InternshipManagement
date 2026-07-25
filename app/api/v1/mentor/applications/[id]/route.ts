@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
 
-const prisma = new PrismaClient();
+
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -16,10 +16,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
     const userId = payload.userId as string;
-    const roleId = payload.roleId as string;
-
-    const userRole = await prisma.role.findUnique({ where: { id: roleId } });
-    if (!userRole || (userRole.roleName !== 'MENTOR' && userRole.roleName !== 'ADMIN')) {
+    const userRoleName = payload.role as string;
+    if (userRoleName !== 'MENTOR' && userRoleName !== 'ADMIN') {
       return NextResponse.json({ message: 'Forbidden: Mentor access required' }, { status: 403 });
     }
 
@@ -30,7 +28,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ message: 'Invalid status' }, { status: 400 });
     }
 
-    const applicationId = params.id;
+    const paramsObj = await params;
+    const applicationId = paramsObj.id;
 
     const application = await prisma.internshipApplication.findUnique({
       where: { id: applicationId }

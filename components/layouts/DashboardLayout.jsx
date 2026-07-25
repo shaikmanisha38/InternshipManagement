@@ -63,7 +63,7 @@ export default function DashboardLayout({ role = "student", children }) {
           { name: 'Students', path: '/mentor/students', icon: Users, group: 'Student Management' },
           { name: 'Applications', path: '/mentor/applications', icon: UserCheck, group: 'Student Management' },
           { name: 'Projects', path: '/mentor/projects', icon: FolderKanban, group: 'Student Management' },
-          { name: 'Attendance', path: '/mentor/attendance', icon: CalendarDays, group: 'Student Management' },
+          { name: 'Daily Submissions', path: '/mentor/submissions', icon: CheckSquare, group: 'Student Management' },
           { name: 'Assessments', path: '/mentor/assessments', icon: ClipboardCheck, group: 'Evaluation & Grading' },
           { name: 'Certificates', path: '/mentor/certificates', icon: Award, group: 'Evaluation & Grading' },
           { name: 'Reports', path: '/mentor/reports', icon: FileText, group: 'Evaluation & Grading' },

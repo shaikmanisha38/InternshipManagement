@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 
 const { Option } = Select;
-const { TabPane } = Tabs;
 
 // Removed Mock Data
 
@@ -17,14 +16,10 @@ export default function MentorStudents() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   
-  const [applications, setApplications] = useState([]);
-  const [loadingApps, setLoadingApps] = useState(true);
-
   const [students, setStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
 
   useEffect(() => {
-    fetchApplications();
     fetchStudents();
   }, []);
 
@@ -65,41 +60,6 @@ export default function MentorStudents() {
     }
   };
 
-  const fetchApplications = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/mentor/applications', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setApplications(data);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingApps(false);
-    }
-  };
-
-  const handleApplication = async (id, status) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/v1/mentor/applications/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status })
-      });
-      if (response.ok) {
-        fetchApplications(); // Refresh list
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const handleRowClick = (record) => {
     setSelectedStudent(record);
@@ -112,60 +72,6 @@ export default function MentorStudents() {
   };
 
   // --- COLUMNS CONFIGURATION ---
-  const applicationColumns = [
-    {
-      title: 'Student',
-      dataIndex: 'student',
-      key: 'student',
-      render: (student) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="bg-indigo-100 text-indigo-600">{student?.name?.charAt(0) || 'U'}</Avatar>
-          <div>
-            <div className="font-semibold text-slate-800">{student?.name}</div>
-            <div className="text-xs text-slate-500">{student?.email}</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Internship',
-      dataIndex: 'internship',
-      key: 'internship',
-      render: (internship) => (
-        <div>
-          <div className="font-semibold text-slate-800">{internship?.title}</div>
-          <div className="text-xs text-slate-500">{internship?.companyName}</div>
-        </div>
-      )
-    },
-    {
-      title: 'Applied On',
-      dataIndex: 'appliedAt',
-      key: 'appliedAt',
-      render: (text) => new Date(text).toLocaleDateString()
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      render: (_, record) => (
-        <Space>
-          <Button 
-            type="primary" 
-            className="bg-green-500 hover:bg-green-600 border-none"
-            onClick={() => handleApplication(record.id, 'ACCEPTED')}
-          >
-            Accept
-          </Button>
-          <Button 
-            danger 
-            onClick={() => handleApplication(record.id, 'REJECTED')}
-          >
-            Reject
-          </Button>
-        </Space>
-      ),
-    }
-  ];
 
   const columns = [
     {
@@ -286,31 +192,19 @@ export default function MentorStudents() {
 
         {/* ZONE 2: MASTER STUDENT DIRECTORY */}
         <Card className="rounded-xl shadow-sm shadow-blue-900/5 border border-slate-100 overflow-hidden"  styles={{ body: { padding: 0 } }}>
-            <Tabs defaultActiveKey="1" className="mt-4">
-              <TabPane tab="Enrolled Students" key="1">
-                <Table 
-                  columns={columns} 
-                  dataSource={students}
+          <div className="p-4">
+            <Table 
+              columns={columns} 
+              dataSource={students}
               loading={loadingStudents} 
-                  pagination={{ pageSize: 7 }}
-                  onRow={(record) => ({
-                    onClick: () => handleRowClick(record),
-                    className: 'cursor-pointer hover:bg-slate-50 transition-colors'
-                  })}
-                  className="mt-4 border border-slate-200 rounded-lg overflow-hidden"
-                />
-              </TabPane>
-              <TabPane tab={<Badge count={applications.length} offset={[10, 0]}>Pending Applications</Badge>} key="2">
-                 <Table 
-                  columns={applicationColumns} 
-                  dataSource={applications} 
-                  rowKey="id"
-                  loading={loadingApps}
-                  pagination={{ pageSize: 7 }}
-                  className="mt-4 border border-slate-200 rounded-lg overflow-hidden"
-                />
-              </TabPane>
-            </Tabs>
+              pagination={{ pageSize: 10 }}
+              onRow={(record) => ({
+                onClick: () => handleRowClick(record),
+                className: 'cursor-pointer hover:bg-slate-50 transition-colors'
+              })}
+              className="border border-slate-200 rounded-lg overflow-hidden"
+            />
+          </div>
         </Card>
 
       </div>
@@ -325,7 +219,7 @@ export default function MentorStudents() {
             </div>
           ) : 'Student Portfolio'
         }
-        width={700}
+        size="large"
         onClose={closeDrawer}
         open={drawerVisible}
         styles={{ body: {} }}
@@ -356,89 +250,109 @@ export default function MentorStudents() {
         }
       >
         {selectedStudent && (
-          <Tabs defaultActiveKey="1" className="mt-4 custom-tabs">
-            <TabPane tab="Profile & Integration" key="1">
-              <div className="py-6 space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Email Address</p>
-                    <p className="text-sm font-medium text-[#0F172A]">{selectedStudent.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">GitHub Profile</p>
-                    <a href="#" className="text-sm font-medium text-blue-600 flex items-center gap-2 hover:underline">
-                      <GithubOutlined className="w-4 h-4" /> @{selectedStudent.github}
-                    </a>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">College</p>
-                    <p className="text-sm font-medium text-[#0F172A]">{selectedStudent.college}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Department</p>
-                    <p className="text-sm font-medium text-[#0F172A]">{selectedStudent.department}</p>
-                  </div>
-                </div>
-              </div>
-            </TabPane>
-            <TabPane tab="Progress & Roadmap" key="2">
-              <div className="py-6">
-                <h4 className="font-semibold text-[#0F172A] mb-4">Timeline Track</h4>
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-emerald-100 text-emerald-600' : i === 3 ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300' : 'bg-slate-100 text-slate-400'}`}>
-                        W{i+1}
-                      </div>
-                      <div className="flex-1 p-3 border border-slate-100 rounded-lg bg-slate-50">
-                        <p className="text-sm font-medium text-[#0F172A]">Module {i+1} {i < 3 ? '(Completed)' : i === 3 ? '(In Progress)' : '(Locked)'}</p>
-                      </div>
+          <Tabs defaultActiveKey="1" className="mt-4 custom-tabs" items={[
+            {
+              key: '1',
+              label: 'Profile & Integration',
+              children: (
+                <div className="py-6 space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Email Address</p>
+                      <p className="text-sm font-medium text-[#0F172A]">{selectedStudent.email}</p>
                     </div>
-                  ))}
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">GitHub Profile</p>
+                      <a href="#" className="text-sm font-medium text-blue-600 flex items-center gap-2 hover:underline">
+                        <GithubOutlined className="w-4 h-4" /> @{selectedStudent.github}
+                      </a>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">College</p>
+                      <p className="text-sm font-medium text-[#0F172A]">{selectedStudent.college}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Department</p>
+                      <p className="text-sm font-medium text-[#0F172A]">{selectedStudent.department}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </TabPane>
-            <TabPane tab="Tasks & AI Feedback" key="3">
-              <div className="py-6">
-                <div className="p-4 border border-blue-100 bg-blue-50/50 rounded-xl mb-4">
-                  <h4 className="text-sm font-bold text-[#0F172A] flex items-center gap-2 mb-2">
-                    <FileText className="w-4 h-4 text-blue-600" /> Recent Submission: REST API Auth
-                  </h4>
-                  <p className="text-sm text-[#475569] mb-3">AI Evaluation: Excellent use of JWT tokens. However, error handling middleware could be improved to catch async rejections.</p>
-                  <Tag color="blue">Score: 92/100</Tag>
+              )
+            },
+            {
+              key: '2',
+              label: 'Progress & Roadmap',
+              children: (
+                <div className="py-6">
+                  <h4 className="font-semibold text-[#0F172A] mb-4">Timeline Track</h4>
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-4">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-emerald-100 text-emerald-600' : i === 3 ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300' : 'bg-slate-100 text-slate-400'}`}>
+                          W{i+1}
+                        </div>
+                        <div className="flex-1 p-3 border border-slate-100 rounded-lg bg-slate-50">
+                          <p className="text-sm font-medium text-[#0F172A]">Module {i+1} {i < 3 ? '(Completed)' : i === 3 ? '(In Progress)' : '(Locked)'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </TabPane>
-            <TabPane tab="Assessments & Attendance" key="4">
-              <div className="py-6 space-y-6">
-                <div>
-                  <h4 className="font-semibold text-[#0F172A] mb-3">Assessment History</h4>
-                  <Table 
-                    size="small" 
-                    pagination={false}
-                    columns={[
-                      { title: 'Exam', dataIndex: 'exam' },
-                      { title: 'Score', dataIndex: 'score' },
-                      { title: 'Status', dataIndex: 'status', render: s => <Tag color="success">{s}</Tag> }
-                    ]}
-                    dataSource={[
-                      { key: 1, exam: 'Week 1 Basics', score: '85%', status: 'Pass' },
-                      { key: 2, exam: 'Week 2 Advanced', score: '90%', status: 'Pass' },
-                    ]}
-                  />
+              )
+            },
+            {
+              key: '3',
+              label: 'Tasks & AI Feedback',
+              children: (
+                <div className="py-6">
+                  <div className="p-4 border border-blue-100 bg-blue-50/50 rounded-xl mb-4">
+                    <h4 className="text-sm font-bold text-[#0F172A] flex items-center gap-2 mb-2">
+                      <FileText className="w-4 h-4 text-blue-600" /> Recent Submission: REST API Auth
+                    </h4>
+                    <p className="text-sm text-[#475569] mb-3">AI Evaluation: Excellent use of JWT tokens. However, error handling middleware could be improved to catch async rejections.</p>
+                    <Tag color="blue">Score: 92/100</Tag>
+                  </div>
                 </div>
-              </div>
-            </TabPane>
-            <TabPane tab="Certificates" key="5">
-              <div className="py-6 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 rounded-full mb-4">
-                  <Award className="w-8 h-8 text-emerald-500" />
+              )
+            },
+            {
+              key: '4',
+              label: 'Assessments & Attendance',
+              children: (
+                <div className="py-6 space-y-6">
+                  <div>
+                    <h4 className="font-semibold text-[#0F172A] mb-3">Assessment History</h4>
+                    <Table 
+                      size="small" 
+                      pagination={false}
+                      columns={[
+                        { title: 'Exam', dataIndex: 'exam' },
+                        { title: 'Score', dataIndex: 'score' },
+                        { title: 'Status', dataIndex: 'status', render: s => <Tag color="success">{s}</Tag> }
+                      ]}
+                      dataSource={[
+                        { key: 1, exam: 'Week 1 Basics', score: '85%', status: 'Pass' },
+                        { key: 2, exam: 'Week 2 Advanced', score: '90%', status: 'Pass' },
+                      ]}
+                    />
+                  </div>
                 </div>
-                <h4 className="font-semibold text-[#0F172A] mb-1">No Certificates Yet</h4>
-                <p className="text-sm text-slate-500">Student must complete the internship roadmap to unlock certificates.</p>
-              </div>
-            </TabPane>
-          </Tabs>
+              )
+            },
+            {
+              key: '5',
+              label: 'Certificates',
+              children: (
+                <div className="py-6 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 rounded-full mb-4">
+                    <Award className="w-8 h-8 text-emerald-500" />
+                  </div>
+                  <h4 className="font-semibold text-[#0F172A] mb-1">No Certificates Yet</h4>
+                  <p className="text-sm text-slate-500">Student must complete the internship roadmap to unlock certificates.</p>
+                </div>
+              )
+            }
+          ]} />
         )}
       </Drawer>
       

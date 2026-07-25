@@ -1,11 +1,13 @@
 "use client";
-import MentorAttendance from '@/components/pages/MentorAttendance';
+import MentorSubmissions from '@/components/pages/MentorSubmissions';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
+
+
 
 export default function Page() {
   return (
     <DashboardLayout role="mentor">
-      <MentorAttendance />
+      <MentorSubmissions />
     </DashboardLayout>
   );
 }

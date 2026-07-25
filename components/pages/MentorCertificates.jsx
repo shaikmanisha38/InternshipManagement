@@ -176,7 +176,7 @@ export default function MentorCertificates() {
       {/* ZONE 3: CREDENTIAL AUDIT & PREVIEW CONSOLE */}
       <Drawer
         title={<span className="font-bold text-xl text-[#0F172A]">Certificate Verification Workspace</span>}
-        width={800}
+        size="large"
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
         styles={{ body: {} }}

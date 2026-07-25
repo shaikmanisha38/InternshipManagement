@@ -28,7 +28,7 @@ export default function Roadmap() {
         }
 
         // 1. Fetch current roadmap summary
-        const res = await fetch('http://localhost:3000/api/v1/roadmaps/current', {
+        const res = await fetch('/api/v1/roadmaps/current', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -42,7 +42,7 @@ export default function Roadmap() {
         // 2. Fetch days for each week concurrently
         if (data.weeks && data.weeks.length > 0) {
           const weeksPromises = data.weeks.map(week => 
-            fetch(`http://localhost:3000/api/v1/roadmaps/week/${data.id}?weekNumber=${week.weekNumber}`, {
+            fetch(`/api/v1/roadmaps/week/${data.id}?weekNumber=${week.weekNumber}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             }).then(r => r.json())
           );
@@ -188,22 +188,15 @@ export default function Roadmap() {
                     <Text className="text-slate-700 font-medium block mb-6">{week.description}</Text>
                     
                     <div className="space-y-4">
-                      {days.map((day, dayIndex) => {
-                        // Determine mock status based on week/day for visual demonstration
-                        let status = 'locked';
-                        if (index === 0 && dayIndex === 0) status = 'completed';
-                        if (index === 0 && dayIndex === 1) status = 'unlocked';
-                        
-                        return (
-                          <StatusCard 
-                            key={day.id}
-                            day={day.dayNumber} 
-                            title={`Day ${day.dayNumber}`} 
-                            desc={day.topicsCovered ? day.topicsCovered.join(', ') : 'Topics not listed'}
-                            status={status} 
-                          />
-                        );
-                      })}
+                      {days.map((day) => (
+                        <StatusCard 
+                          key={day.id}
+                          day={day.dayNumber} 
+                          title={day.title} 
+                          status={day.status}
+                          desc={`${day.topicsCovered?.length || 0} Topics • ${day.tasks?.length || 0} Tasks`}
+                        />
+                      ))}
                       {days.length === 0 && (
                         <Text type="secondary">No days specified for this week yet.</Text>
                       )}
