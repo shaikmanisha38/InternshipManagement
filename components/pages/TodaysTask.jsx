@@ -13,13 +13,13 @@ import {
   CodeOutlined,
   CheckCircleOutlined
 } from '@ant-design/icons';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const { Title, Text, Paragraph } = Typography;
 
 export default function TodaysTask() {
   const [checklist, setChecklist] = useState({
-    read: false, clone: false, complete: false, commit: false, push: false, submit: false
+    read: false, code: false, commit: false, push: false
   });
   const [loading, setLoading] = useState(true);
   const [taskData, setTaskData] = useState(null);
@@ -28,10 +28,11 @@ export default function TodaysTask() {
   const [isAiModalVisible, setIsAiModalVisible] = useState(false);
   
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetchTaskData();
-  }, []);
+  }, [searchParams]);
 
   const fetchTaskData = async () => {
     try {
@@ -42,7 +43,14 @@ export default function TodaysTask() {
       }
 
       // 1. Fetch current task
-      const res = await fetch('/api/v1/tasks/today', {
+      const dayParam = searchParams.get('day');
+      const weekParam = searchParams.get('week');
+      let url = '/api/v1/tasks/today';
+      if (dayParam && weekParam) {
+        url += `?day=${dayParam}&week=${weekParam}`;
+      }
+
+      const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -79,7 +87,7 @@ export default function TodaysTask() {
         setSubmission(subData);
         if (subData) {
           // If already submitted, update checklist automatically
-          setChecklist(prev => ({ ...prev, submit: true }));
+          setChecklist({ read: true, code: true, commit: true, push: true });
         }
       }
     } catch (err) {
@@ -91,59 +99,14 @@ export default function TodaysTask() {
     setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSubmitTask = async () => {
-    if (!taskData) return;
-    
-    setSubmitting(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/submissions', {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          taskId: taskData.id,
-          repositoryUrl: taskData.repositoryUrl,
-          branch: 'main',
-          commitHash: `mock-${Date.now()}` // Mocking for now as per plan
-        })
-      });
 
-      if (!res.ok) throw new Error('Submission failed');
-      
-      const newSub = await res.json();
-      setSubmission(newSub);
-      setChecklist(prev => ({ ...prev, submit: true }));
-      message.success('Task submitted successfully! AI is evaluating it.');
-      
-      // AI mock pipeline takes 3 seconds on backend, let's auto-refresh submission after 4 seconds
-      setTimeout(() => fetchLatestSubmission(taskData.id, token), 4000);
-
-    } catch (err) {
-      message.error(err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleOpenVSCode = () => {
-    if (taskData?.repositoryUrl) {
-      // Use VS Code protocol handler to clone the repository directly
-      window.location.href = `vscode://vscode.git/clone?url=${taskData.repositoryUrl}`;
-    } else {
-      message.warning('Repository URL not available');
-    }
+    // Open VS Code generically since task specific repository URL is not present
+    window.location.href = 'vscode://';
   };
 
-  const handleViewRepository = () => {
-    if (taskData?.repositoryUrl) {
-      window.open(taskData.repositoryUrl, '_blank');
-    } else {
-      message.warning('Repository URL not available');
-    }
-  };
+
 
   if (loading) {
     return (
@@ -168,13 +131,17 @@ export default function TodaysTask() {
       children: (
         <div className="prose prose-slate max-w-none">
           <Paragraph className="text-slate-700 text-base leading-relaxed">
+            Based on today's learning topics, your task is to practice and implement what you've learned regarding: <strong>{taskData.title.replace('Task: ', '')}</strong>.
+          </Paragraph>
+          <Paragraph className="text-slate-700 text-base leading-relaxed">
             {taskData.description}
           </Paragraph>
           <Title level={4} className="!text-slate-900 !mt-6 !mb-3">Requirements</Title>
           <ul className="space-y-2 text-slate-700">
-            <li>Ensure you follow standard coding practices.</li>
-            <li>Submit your code via the GitHub repository linked below.</li>
-            <li>Make sure all automated tests pass before submitting.</li>
+            <li>Create a new repository or use your existing internship repository.</li>
+            <li>Write the code implementing today's concepts in your local VS Code.</li>
+            <li>Commit your changes and push them to GitHub today.</li>
+            <li>Go to the Daily Submission page and verify your GitHub link to submit.</li>
           </ul>
         </div>
       ),
@@ -269,51 +236,23 @@ module.exports = solveTask;`}
           {/* Action Button Bar */}
           <Card className="rounded-2xl border-slate-200 shadow-sm bg-white"  styles={{ body: { padding: '24px' } }}>
             <div className="flex flex-col gap-3">
-              <Button 
-                type="primary" 
-                icon={isApproved ? <CheckCircleOutlined /> : <UploadOutlined />} 
-                className={`w-full h-12 rounded-xl font-bold text-base shadow-md mb-2 ${
-                  isApproved 
-                    ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-emerald-600/20' 
-                    : 'bg-blue-600 hover:bg-blue-700 border-blue-600 shadow-blue-600/20'
-                } text-white`}
-                onClick={handleSubmitTask}
-                loading={submitting}
-                disabled={isApproved || hasSubmission} // Disable if pending or approved
-              >
-                {isApproved ? 'Task Approved' : hasSubmission ? 'Task Submitted (Pending)' : 'Submit Task'}
-              </Button>
-              
-              <Button 
-                icon={<RobotOutlined />} 
-                className="w-full h-11 rounded-xl font-bold bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100 hover:border-violet-300"
-                onClick={() => {
-                  if (!hasFeedback) {
-                    message.info('AI is still evaluating your submission. Please check back in a few seconds.');
-                  } else {
-                    setIsAiModalVisible(true);
-                  }
-                }}
-                disabled={!hasSubmission}
-              >
-                View AI Feedback
-              </Button>
+              {isApproved && (
+                <Tag color="success" icon={<CheckCircleOutlined />} className="w-full text-center py-2 text-sm font-bold m-0 mb-3 rounded-lg">
+                  Task Approved
+                </Tag>
+              )}
+              {hasSubmission && !isApproved && (
+                <Tag color="processing" icon={<UploadOutlined />} className="w-full text-center py-2 text-sm font-bold m-0 mb-3 rounded-lg">
+                  Task Submitted (Pending)
+                </Tag>
+              )}
 
-              <Divider className="my-2 border-slate-100" />
-              
               <Button 
                 icon={<CodeOutlined />} 
-                className="w-full h-11 rounded-xl font-bold border-blue-200 text-blue-800 bg-blue-50 hover:bg-blue-100 hover:border-blue-300"
+                className="w-full h-11 rounded-xl font-bold border-blue-200 text-blue-800 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 mt-2"
                 onClick={handleOpenVSCode}
               >
                 Open VS Code
-              </Button>
-              <Button 
-                icon={<GithubOutlined />} 
-                className="w-full h-11 rounded-xl font-bold border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 bg-slate-50"
-                onClick={handleViewRepository}
-              >
-                View Repository
               </Button>
             </div>
           </Card>
@@ -325,11 +264,9 @@ module.exports = solveTask;`}
             <div className="space-y-3 mt-2">
               {[
                 { key: 'read', label: 'Read Problem Statement' },
-                { key: 'clone', label: 'Clone Repository' },
-                { key: 'complete', label: 'Complete Task Logic' },
+                { key: 'code', label: 'Write Code Locally' },
                 { key: 'commit', label: 'Commit Changes' },
-                { key: 'push', label: 'Push to Remote' },
-                { key: 'submit', label: 'Submit for Evaluation' }
+                { key: 'push', label: 'Push to Remote' }
               ].map((item) => (
                 <div
                   key={item.key}
@@ -349,9 +286,28 @@ module.exports = solveTask;`}
             <div className="flex items-center justify-between">
               <Text className="text-slate-700 font-bold">Progress</Text>
               <Text className="text-blue-700 font-black text-lg">
-                {Object.values(checklist).filter(Boolean).length} / 6
+                {Object.values(checklist).filter(Boolean).length} / 4
               </Text>
             </div>
+
+            {!isApproved && !hasSubmission && (
+              <Button 
+                type="primary" 
+                icon={<UploadOutlined />} 
+                className={`w-full h-12 rounded-xl font-bold text-base shadow-md mt-6 ${
+                  Object.values(checklist).filter(Boolean).length === 4 
+                    ? 'bg-blue-600 hover:bg-blue-700 border-blue-600 shadow-blue-600/20' 
+                    : 'bg-slate-300 text-slate-500 border-slate-300 shadow-none'
+                }`}
+                onClick={() => {
+                  sessionStorage.setItem('canSubmitTask', 'true');
+                  router.push('/dashboard/submission');
+                }}
+                disabled={Object.values(checklist).filter(Boolean).length !== 4}
+              >
+                Proceed to Submission
+              </Button>
+            )}
           </Card>
 
         </Col>

@@ -44,12 +44,12 @@ export default function MentorSubmissions() {
   }, [filter]);
 
   // Custom Tooltip for Recharts
-  const PremiumTooltip = ({ active, payload, label }: any) => {
+  const PremiumTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white border border-slate-200 p-3 rounded-lg shadow-lg shadow-blue-900/10">
           <p className="font-bold text-[#0F172A] mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index) => (
             <p key={index} className="text-sm font-semibold" style={{ color: entry.color }}>
               Submissions: {entry.value}
             </p>
@@ -65,7 +65,7 @@ export default function MentorSubmissions() {
     {
       title: 'Student',
       key: 'student',
-      render: (_: any, record: any) => (
+      render: (_, record) => (
         <div className="flex items-center gap-3">
           <Avatar src={record.user.profileImage} size="large" className="bg-indigo-100 text-indigo-600">
             {record.user.name?.charAt(0)}
@@ -80,7 +80,7 @@ export default function MentorSubmissions() {
     {
       title: 'Task Completed',
       key: 'task',
-      render: (_: any, record: any) => (
+      render: (_, record) => (
         <div>
           <div className="font-semibold text-slate-800">{record.task.title}</div>
           <div className="text-xs text-slate-500 font-medium">Week {record.task.week} / Day {record.task.day}</div>
@@ -91,7 +91,7 @@ export default function MentorSubmissions() {
       title: 'Submitted At',
       dataIndex: 'submittedAt',
       key: 'submittedAt',
-      render: (date: string) => (
+      render: (date) => (
         <div className="flex items-center gap-2 text-sm text-[#334155]">
           <Clock className="w-4 h-4 text-slate-400" /> {dayjs(date).format('MMM D, h:mm A')}
         </div>
@@ -101,7 +101,7 @@ export default function MentorSubmissions() {
       title: 'GitHub Link',
       dataIndex: 'repositoryUrl',
       key: 'repositoryUrl',
-      render: (url: string, record: any) => (
+      render: (url, record) => (
         url ? (
           <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1 font-medium">
             View Repo
@@ -115,14 +115,17 @@ export default function MentorSubmissions() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
+      render: (status) => {
         let colorClass = 'bg-slate-100 text-slate-700';
-        if (status === 'EVALUATED') colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        if (status === 'VERIFIED') colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
         if (status === 'PENDING') colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
-        if (status === 'REJECTED') colorClass = 'bg-red-50 text-red-700 border-red-200';
+        if (status === 'FAILED') colorClass = 'bg-red-50 text-red-700 border-red-200';
         
         return (
-          <span className={`px-3 py-1 rounded-full text-xs font-bold border ${colorClass}`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1 w-max ${colorClass}`}>
+            {status === 'VERIFIED' && <CheckCircle className="w-3 h-3" />}
+            {status === 'FAILED' && <AlertCircle className="w-3 h-3" />}
+            {status === 'PENDING' && <Clock className="w-3 h-3" />}
             {status}
           </span>
         );

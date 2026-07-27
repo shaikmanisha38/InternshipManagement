@@ -177,7 +177,11 @@ export default function MyInternship() {
 
     inProgressContent = (
       <div className="space-y-8 mt-6">
-        <Card className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden" styles={{ body: { padding: 0 } }}>
+        <Card 
+          className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden cursor-pointer hover:shadow-xl transition-all hover:scale-[1.01]" 
+          styles={{ body: { padding: 0 } }}
+          onClick={() => router.push('/dashboard/roadmap')}
+        >
           <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 p-8 text-white relative">
             <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
 

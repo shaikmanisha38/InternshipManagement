@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Button, Card, Space, Progress } from 'antd';
-import { Eye, UserSwitch, CheckCircle } from 'lucide-react';
+import { Eye, UserSearch, CheckCircle } from 'lucide-react';
 
 export default function AdminActiveInternships() {
   const columns = [

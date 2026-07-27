@@ -28,8 +28,11 @@ export default function DailySubmission() {
   const [assigned, setAssigned] = useState(true);
   const [workspace, setWorkspace] = useState(null);
   const [history, setHistory] = useState([]);
+  const [canSubmit, setCanSubmit] = useState(false);
 
   useEffect(() => {
+    setCanSubmit(sessionStorage.getItem('canSubmitTask') === 'true');
+
     const fetchWorkspace = async () => {
       try {
         const token = Cookies.get('token') || localStorage.getItem('token');
@@ -71,7 +74,7 @@ export default function DailySubmission() {
     setSubmitting(true);
     try {
       const token = Cookies.get('token') || localStorage.getItem('token');
-      const res = await fetch('/api/v1/submissions', {
+      const res = await fetch('/api/v1/submissions/verify', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -81,7 +84,6 @@ export default function DailySubmission() {
           taskId: workspace.taskId,
           repositoryUrl: values.repoUrl,
           branch: values.branch,
-          commitHash: values.commitHash,
           notes: values.notes
         })
       });
@@ -209,65 +211,25 @@ export default function DailySubmission() {
         {/* LEFT COLUMN: ACTIVE WORK SUBMISSION */}
         <Col xs={24} lg={14} xl={15} className="space-y-6">
 
-          {/* Active Submission Read-Only Overview */}
-          <Card className="rounded-xl border border-slate-200 shadow-sm bg-white"  styles={{ body: { padding: '24px 32px' } }}>
-            <div className="flex flex-col gap-5">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                <Text className="text-indigo-600 uppercase text-xs font-bold tracking-widest block">Active Workspace Session</Text>
-                <Tag className="px-3 py-1.5 m-0 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded flex items-center gap-1.5">
-                  <ClockCircleOutlined /> Week {workspace?.currentWeek || 1} • Day {workspace?.currentDay || 1}
-                </Tag>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4 pt-2">
-                <div>
-                  <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Repository</Text>
-                  <Text className="text-slate-900 font-bold flex items-center gap-2">
-                    <GithubOutlined className="text-slate-400" /> 
-                    {workspace?.repoName || 'Not Connected'}
-                  </Text>
-                </div>
-                <div>
-                  <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Branch</Text>
-                  <Text className="text-slate-900 font-bold flex items-center gap-2">
-                    <BranchesOutlined className="text-slate-400" /> 
-                    {history.length > 0 && history[0].branch ? history[0].branch : 'feature/auth'}
-                  </Text>
-                </div>
-                <div>
-                  <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Commit Hash</Text>
-                  <Text className="text-indigo-700 font-mono bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded text-sm font-bold">
-                    {history.length > 0 && history[0].commitHash ? history[0].commitHash.substring(0, 7) : 'a1b2c3d'}
-                  </Text>
-                </div>
-                <div>
-                  <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Time Logged</Text>
-                  <Text className="text-slate-900 font-bold">--</Text>
-                </div>
-                <div>
-                  <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Validation Status</Text>
-                  {history.length > 0 && history[0].status === 'VERIFIED' ? (
-                     <Tag className="m-0 bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold rounded px-3">Verified</Tag>
-                  ) : history.length > 0 && history[0].status === 'PENDING' ? (
-                     <Tag className="m-0 bg-blue-50 border border-blue-200 text-blue-700 font-bold rounded px-3">Pending</Tag>
-                  ) : (
-                     <Tag className="m-0 bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold rounded px-3">Ready</Tag>
-                  )}
-                </div>
-                <div>
-                  <Text className="text-slate-500 text-xs uppercase font-bold tracking-wider block mb-1">Current Score</Text>
-                  <Text className="text-slate-900 font-bold text-lg leading-none">
-                    {history.length > 0 && history[0].aiEvaluation?.score ? `+${history[0].aiEvaluation.score} XP` : '+0 XP'}
-                  </Text>
-                </div>
-              </div>
-            </div>
-          </Card>
 
           {/* Interactive Submission Form Card */}
           <Card className="rounded-xl border border-slate-200 shadow-sm bg-white" title={<Title level={4} className="!text-slate-900 !m-0" styles={{ body: { padding: '32px' } }}>Submit Day {workspace?.currentDay || 1} Progress</Title>}
             headStyle={{ borderBottom: '1px solid #f1f5f9', padding: '24px 32px 16px 32px', minHeight: 'auto' }}
           >
+            {!canSubmit ? (
+              <div className="py-8">
+                <Result
+                  status="warning"
+                  title="Complete Task Workflow First"
+                  subTitle="You must complete the workflow checklist on the Today's Task page before you can verify and submit your work."
+                  extra={
+                    <Button type="primary" href="/dashboard/task" className="bg-indigo-600">
+                      Go to Today's Task
+                    </Button>
+                  }
+                />
+              </div>
+            ) : (
             <Form
               form={form}
               layout="vertical"
@@ -288,7 +250,7 @@ export default function DailySubmission() {
               </Form.Item>
 
               <Row gutter={16}>
-                <Col xs={24} md={12}>
+                <Col xs={24} md={24}>
                   <Form.Item
                     label={<Text className="font-bold text-slate-700">Target Branch</Text>}
                     name="branch"
@@ -304,19 +266,6 @@ export default function DailySubmission() {
                       <Option value="feature/auth">feature/auth</Option>
                       <Option value="develop">develop</Option>
                     </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label={<Text className="font-bold text-slate-700">Commit ID / Hash</Text>}
-                    name="commitHash"
-                    rules={[{ required: true, message: 'Please enter commit hash' }]}
-                  >
-                    <Input
-                      prefix={<PushpinOutlined className="text-slate-400 mr-1" />}
-                      placeholder="e.g. 7f8a9b2"
-                      className="rounded-lg h-12 border-slate-300 bg-slate-50 focus:bg-white font-mono text-slate-900 hover:border-indigo-400 focus:border-indigo-500"
-                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -337,15 +286,6 @@ export default function DailySubmission() {
               <Form.Item className="mb-0 text-right">
                 <Space size="middle">
                   <Button
-                    type="default"
-                    size="large"
-                    icon={<RobotOutlined />}
-                    className="h-12 px-6 rounded-lg font-bold border-indigo-200 text-indigo-600 hover:bg-indigo-50"
-                    onClick={() => message.info('Running AI static analysis on your code...')}
-                  >
-                    AI Pre-Flight Check
-                  </Button>
-                  <Button
                     type="primary"
                     htmlType="submit"
                     size="large"
@@ -353,11 +293,12 @@ export default function DailySubmission() {
                     icon={<UploadOutlined />}
                     className="h-12 px-8 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-sm text-white"
                   >
-                    Submit
+                    Verify & Submit
                   </Button>
                 </Space>
               </Form.Item>
             </Form>
+            )}
           </Card>
         </Col>
 

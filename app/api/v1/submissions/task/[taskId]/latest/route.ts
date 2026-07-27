@@ -4,7 +4,7 @@ import { jwtVerify } from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
-export async function GET(req: Request, { params }: { params: { taskId: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ taskId: string }> }) {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

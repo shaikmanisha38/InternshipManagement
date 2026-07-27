@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
     // If using Ethereal, return the preview URL to the client for easy testing in development
     const message = previewUrl 
-      ? \Test mode: Verification code sent. Preview URL: \\
+      ? `Test mode: Verification code sent. Preview URL: ${previewUrl}`
       : 'Verification code sent to your email.';
 
     return NextResponse.json({ message, previewUrl }, { status: 200 });

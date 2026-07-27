@@ -49,30 +49,76 @@ export async function POST(req: Request) {
 
     const isConnected = !!(githubAccount && githubAccount.isConnected && githubAccount.accessToken);
 
+    let finalStatus = 'FAILED';
+    let actualCommitHash = commitHash || '';
+    
+    if (repositoryUrl) {
+      try {
+        // Extract owner and repo from URL (e.g. https://github.com/owner/repo)
+        const urlParts = repositoryUrl.replace(/\/$/, '').split('/');
+        const repoIndex = urlParts.length - 1;
+        const ownerIndex = urlParts.length - 2;
+        
+        if (repoIndex >= 0 && ownerIndex >= 0) {
+          const owner = urlParts[ownerIndex];
+          const repo = urlParts[repoIndex];
+          
+          // Get today's start and end date
+          const startOfDay = new Date();
+          startOfDay.setHours(0, 0, 0, 0);
+          
+          const endOfDay = new Date();
+          endOfDay.setHours(23, 59, 59, 999);
+          
+          const headers: any = {};
+          if (isConnected) {
+            headers['Authorization'] = `Bearer ${githubAccount.accessToken}`;
+          }
+          
+          const targetBranch = branch || 'main';
+          const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${targetBranch}&since=${startOfDay.toISOString()}&until=${endOfDay.toISOString()}`;
+          
+          const gitRes = await fetch(apiUrl, { headers });
+          
+          if (gitRes.ok) {
+            const commits = await gitRes.json();
+            if (Array.isArray(commits) && commits.length > 0) {
+              finalStatus = 'VERIFIED';
+              if (!actualCommitHash) {
+                actualCommitHash = commits[0].sha;
+              }
+            } else {
+              console.log('No commits found today for', owner, repo);
+            }
+          } else {
+            console.error('Failed to fetch from github API:', await gitRes.text());
+          }
+        }
+      } catch (err) {
+        console.error('Error verifying github commits:', err);
+      }
+    }
+
     // Create the submission record
-    const submission = await prisma.taskSubmission.create({
+    let submission = await prisma.taskSubmission.create({
       data: {
         userId: userId,
         taskId: taskId,
         repositoryUrl: repositoryUrl || '',
         branch: branch || 'main',
-        commitHash: commitHash || '',
+        commitHash: actualCommitHash,
         notes: notes || null,
-        status: isConnected ? 'PENDING' : 'FAILED',
-      }
+        status: finalStatus as any,
+      },
+      include: { task: { include: { roadmapDay: { include: { roadmap: true } } } } }
     });
 
     let finalSubmission = submission;
-    if (isConnected) {
-      // Mocking AI Evaluation synchronously for instant feedback in the UI
+    if (finalStatus === 'VERIFIED') {
+      // Create AI Evaluation synchronously for instant feedback in the UI
       try {
-        finalSubmission = await prisma.taskSubmission.update({
-          where: { id: submission.id },
-          data: { status: 'VERIFIED' }, // 'VERIFIED' instead of 'APPROVED' based on schema
-          include: { aiEvaluation: true, task: { include: { roadmapDay: { include: { roadmap: true } } } } }
-        });
-        
-        const evaluation = await prisma.aIEvaluation.create({
+
+        const evaluation = await prisma.aiEvaluation.create({
           data: {
             submissionId: submission.id,
             score: 95,
@@ -81,7 +127,7 @@ export async function POST(req: Request) {
             weaknesses: []
           }
         });
-        finalSubmission.aiEvaluation = evaluation;
+        (finalSubmission as any).aiEvaluation = evaluation;
       } catch (e) {
         console.error("Failed to mock AI evaluation:", e);
       }

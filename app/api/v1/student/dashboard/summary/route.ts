@@ -47,13 +47,48 @@ export async function GET(req: Request) {
       }
     });
 
+    const submissions = await prisma.taskSubmission.findMany({
+      where: { userId: userId, status: 'VERIFIED' },
+      select: { submittedAt: true },
+      orderBy: { submittedAt: 'desc' }
+    });
+
+    let currentStreak = 0;
+    if (submissions.length > 0) {
+      const dates = [...new Set(submissions.map(s => s.submittedAt.toISOString().split('T')[0]))];
+      let checkDate = new Date();
+      const todayStr = checkDate.toISOString().split('T')[0];
+      checkDate.setDate(checkDate.getDate() - 1);
+      const yesterdayStr = checkDate.toISOString().split('T')[0];
+      
+      let dateIndex = 0;
+      if (dates[0] === todayStr) {
+        currentStreak++;
+        dateIndex = 1;
+      } else if (dates[0] === yesterdayStr) {
+        currentStreak++;
+        dateIndex = 1;
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+      
+      while (dateIndex < dates.length) {
+        if (dates[dateIndex] === checkDate.toISOString().split('T')[0]) {
+          currentStreak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+          dateIndex++;
+        } else {
+          break;
+        }
+      }
+    }
+
     // 4. Formulate the response
     const dashboardData: any = {
       user: {
         name: user.name,
         profileImage: user.profileImage,
         rank: user.leaderboard?.rank || 'Unranked',
-        streak: 0, // Not in schema explicitly yet
+        streak: currentStreak,
         badges: user.studentBadges.map(sb => ({ id: sb.badge.id, name: sb.badge.badgeName, icon: '🏆' }))
       },
       internship: null,

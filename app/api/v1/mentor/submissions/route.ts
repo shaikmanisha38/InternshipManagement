@@ -46,14 +46,31 @@ export async function GET(req: Request) {
         task: {
           select: {
             title: true,
-            week: true,
-            day: true
+            roadmapDay: {
+              select: {
+                dayNumber: true,
+                roadmap: {
+                  select: {
+                    weekNumber: true
+                  }
+                }
+              }
+            }
           }
         }
       },
       orderBy: { submittedAt: 'desc' }
     });
-    
+
+    const mappedSubmissions = submissions.map((sub: any) => ({
+      ...sub,
+      task: {
+        title: sub.task.title,
+        week: sub.task.roadmapDay?.roadmap?.weekNumber || 1,
+        day: sub.task.roadmapDay?.dayNumber || 1
+      }
+    }));
+
     // Get total enrolled students (students with active internships)
     const activeInternsCount = await prisma.studentInternship.count({
       where: {
@@ -61,12 +78,12 @@ export async function GET(req: Request) {
       }
     });
 
-    const totalSubmissions = submissions.length;
+    const totalSubmissions = mappedSubmissions.length;
     const submissionRate = activeInternsCount > 0 ? (totalSubmissions / activeInternsCount) * 100 : 0;
-    const pendingReviews = submissions.filter((s: any) => s.status === 'PENDING').length;
+    const pendingReviews = mappedSubmissions.filter((s: any) => s.status === 'PENDING').length;
 
     // Group for chart (by date string)
-    const grouped = submissions.reduce((acc: any, curr: any) => {
+    const grouped = mappedSubmissions.reduce((acc: any, curr: any) => {
       const dateStr = dayjs(curr.submittedAt).format('MMM DD');
       if (!acc[dateStr]) acc[dateStr] = 0;
       acc[dateStr]++;
@@ -79,7 +96,7 @@ export async function GET(req: Request) {
     })).reverse(); // Oldest to newest for chart
 
     return NextResponse.json({
-      submissions,
+      submissions: mappedSubmissions,
       metrics: {
         totalSubmissions,
         submissionRate: Math.round(submissionRate),

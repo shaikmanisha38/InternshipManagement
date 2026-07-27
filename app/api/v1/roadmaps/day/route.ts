@@ -20,6 +20,10 @@ export async function GET(req: Request) {
     const queryDay = searchParams.get('day');
     const queryWeek = searchParams.get('week');
 
+    if (!queryDay || !queryWeek) {
+      return NextResponse.json({ message: 'Missing day or week parameters' }, { status: 400 });
+    }
+
     const studentInternship = await prisma.studentInternship.findFirst({
       where: {
         studentId: userId,
@@ -31,8 +35,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: 'Active internship not found' }, { status: 404 });
     }
 
-    const targetWeek = queryWeek ? parseInt(queryWeek) : studentInternship.currentWeek;
-    const targetDay = queryDay ? parseInt(queryDay) : studentInternship.currentDay;
+    const targetWeek = parseInt(queryWeek);
+    const targetDay = parseInt(queryDay);
 
     const roadmap = await prisma.roadmap.findFirst({
       where: {
@@ -51,19 +55,17 @@ export async function GET(req: Request) {
         dayNumber: targetDay
       },
       include: {
-        tasks: {
-          orderBy: { unlockOrder: 'asc' }
-        }
+        tasks: true // Include tasks if we want to know task counts
       }
     });
 
-    if (!roadmapDay || roadmapDay.tasks.length === 0) {
-      return NextResponse.json([], { status: 200 }); // Return empty array if no tasks
+    if (!roadmapDay) {
+      return NextResponse.json({ message: 'Roadmap day not found' }, { status: 404 });
     }
 
-    return NextResponse.json(roadmapDay.tasks);
+    return NextResponse.json(roadmapDay);
   } catch (error: any) {
-    console.error('Error fetching today task:', error);
+    console.error('Error fetching roadmap day:', error);
     return NextResponse.json({ message: `Internal server error: ${error.message}` }, { status: 500 });
   }
 }

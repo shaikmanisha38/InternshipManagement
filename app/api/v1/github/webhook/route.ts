@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     // 2. Find the active PENDING task submission for this student
     const activeSubmission = await prisma.taskSubmission.findFirst({
       where: {
-        studentId: githubAccount.studentId,
+        userId: githubAccount.userId,
         status: 'PENDING',
       },
       orderBy: {
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
           commitHash: commit.id,
           message: commit.message,
           branch: branch,
-          commitTime: new Date(commit.timestamp),
+          verifiedAt: new Date(commit.timestamp),
         },
       });
     });

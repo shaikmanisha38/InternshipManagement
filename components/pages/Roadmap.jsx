@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
 
-export default function Roadmap() {
+export default function Roadmap({ embedded = false }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roadmapData, setRoadmapData] = useState(null);
@@ -65,7 +65,16 @@ export default function Roadmap() {
     fetchRoadmap();
   }, [router]);
 
-  const StatusCard = ({ day, title, status, desc }) => {
+  const handleDayClick = (dayNumber, weekNumber, status) => {
+    if (status === 'locked' || (!status && status !== 'unlocked' && status !== 'completed')) {
+      // By default if it's not completed or unlocked, consider it locked.
+      message.warning('This day is currently locked. Complete previous days to unlock.');
+    } else {
+      router.push(`/dashboard/learning?day=${dayNumber}&week=${weekNumber}`);
+    }
+  };
+
+  const StatusCard = ({ day, week, title, status, desc, onClick }) => {
     let bgClass = '';
     let textClass = '';
     let borderClass = '';
@@ -90,7 +99,7 @@ export default function Roadmap() {
     }
 
     return (
-      <div className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center gap-4 ${bgClass} ${borderClass}`}>
+      <div onClick={onClick} className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center gap-4 ${bgClass} ${borderClass}`}>
         <div className="shrink-0">{icon}</div>
         <div className="flex-1">
           <div className="flex justify-between items-start mb-1">
@@ -109,7 +118,7 @@ export default function Roadmap() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-full min-h-[600px]">
+      <div className={`flex justify-center items-center ${embedded ? 'py-12' : 'h-full min-h-[600px]'}`}>
         <Spin size="large" />
       </div>
     );
@@ -117,7 +126,7 @@ export default function Roadmap() {
 
   if (error) {
     return (
-      <div className="p-8">
+      <div className={embedded ? 'py-8' : 'p-8'}>
         <Alert title="Error" description={error} type="error" showIcon />
       </div>
     );
@@ -130,7 +139,7 @@ export default function Roadmap() {
   const currentWeekDisplay = roadmapData.weeks && roadmapData.weeks.length > 0 ? roadmapData.weeks[0].weekNumber : 1;
 
   return (
-    <div className="p-4 md:p-8 space-y-8 bg-slate-50 min-h-full">
+    <div className={embedded ? "space-y-8 mt-12" : "p-4 md:p-8 space-y-8 bg-slate-50 min-h-full"}>
       
       {/* Header Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -192,9 +201,11 @@ export default function Roadmap() {
                         <StatusCard 
                           key={day.id}
                           day={day.dayNumber} 
+                          week={week.weekNumber}
                           title={day.title} 
                           status={day.status}
                           desc={`${day.topicsCovered?.length || 0} Topics • ${day.tasks?.length || 0} Tasks`}
+                          onClick={() => handleDayClick(day.dayNumber, week.weekNumber, day.status)}
                         />
                       ))}
                       {days.length === 0 && (

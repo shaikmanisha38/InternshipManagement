@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, Typography, Progress, Table, Tag, Row, Col, Space } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Progress, Table, Tag, Row, Col, Space, Spin, Alert } from 'antd';
 import { 
   CheckCircleFilled, 
   CloseCircleFilled, 
@@ -13,49 +13,7 @@ import {
 
 const { Title, Text } = Typography;
 
-// Mock Table Data
-const attendanceData = [
-  {
-    key: '1',
-    date: 'Oct 12, 2025',
-    loginTime: '08:55 AM',
-    logoutTime: '05:30 PM',
-    hours: '8.5',
-    status: 'Present',
-  },
-  {
-    key: '2',
-    date: 'Oct 11, 2025',
-    loginTime: '09:15 AM',
-    logoutTime: '06:00 PM',
-    hours: '8.75',
-    status: 'Late',
-  },
-  {
-    key: '3',
-    date: 'Oct 10, 2025',
-    loginTime: '--:--',
-    logoutTime: '--:--',
-    hours: '0',
-    status: 'Absent',
-  },
-  {
-    key: '4',
-    date: 'Oct 09, 2025',
-    loginTime: '08:50 AM',
-    logoutTime: '05:15 PM',
-    hours: '8.4',
-    status: 'Present',
-  },
-  {
-    key: '5',
-    date: 'Oct 08, 2025',
-    loginTime: '09:00 AM',
-    logoutTime: '05:00 PM',
-    hours: '8.0',
-    status: 'Present',
-  },
-];
+
 
 // Table Columns Configuration
 const columns = [
@@ -133,6 +91,49 @@ const columns = [
 ];
 
 export default function Attendance() {
+  const [data, setData] = useState([]);
+  const [summary, setSummary] = useState({ present: 0, late: 0, absent: 0, overall: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/v1/student/attendance', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch attendance data');
+        const result = await res.json();
+        
+        const attData = result.attendanceData || [];
+        setData(attData);
+        
+        let p = 0, l = 0, a = 0;
+        attData.forEach(d => {
+          if (d.status === 'Present') p++;
+          else if (d.status === 'Late') l++;
+          else if (d.status === 'Absent') a++;
+        });
+
+        setSummary({
+          present: p,
+          late: l,
+          absent: a,
+          overall: result.summary?.overallRate || 0
+        });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAttendance();
+  }, []);
+
+  if (loading) return <div className="flex justify-center items-center min-h-[60vh]"><Spin size="large" /></div>;
+  if (error) return <div className="p-8 max-w-4xl mx-auto"><Alert title="Error" description={error} type="error" showIcon /></div>;
+
   return (
     <div className="p-4 md:p-8 space-y-8 bg-blue-50/50 min-h-full">
       
@@ -153,7 +154,7 @@ export default function Attendance() {
               <Text className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4">Overall Attendance</Text>
               <Progress 
                 type="dashboard" 
-                percent={94} 
+                percent={summary.overall} 
                 strokeColor={{ '0%': '#3b82f6', '100%': '#10b981' }}
                 size={140}
                 format={(percent) => (
@@ -177,7 +178,7 @@ export default function Attendance() {
                       <UserSwitchOutlined className="text-blue-600 text-2xl" />
                     </div>
                     <div>
-                      <Title level={1} className="!text-blue-900 !m-0 !font-black !text-5xl">42</Title>
+                      <Title level={1} className="!text-blue-900 !m-0 !font-black !text-5xl">{summary.present}</Title>
                       <Text className="text-blue-600 font-bold text-sm uppercase tracking-wider mt-1 block">Present Days</Text>
                     </div>
                   </div>
@@ -192,7 +193,7 @@ export default function Attendance() {
                       <WarningFilled className="text-amber-500 text-xl" />
                     </div>
                     <div>
-                      <Title level={1} className="!text-amber-900 !m-0 !font-black !text-5xl">3</Title>
+                      <Title level={1} className="!text-amber-900 !m-0 !font-black !text-5xl">{summary.late}</Title>
                       <Text className="text-amber-600 font-bold text-sm uppercase tracking-wider mt-1 block">Late Arrivals</Text>
                     </div>
                   </div>
@@ -207,7 +208,7 @@ export default function Attendance() {
                       <CloseCircleFilled className="text-rose-500 text-xl" />
                     </div>
                     <div>
-                      <Title level={1} className="!text-rose-900 !m-0 !font-black !text-5xl">1</Title>
+                      <Title level={1} className="!text-rose-900 !m-0 !font-black !text-5xl">{summary.absent}</Title>
                       <Text className="text-rose-600 font-bold text-sm uppercase tracking-wider mt-1 block">Absent Days</Text>
                     </div>
                   </div>
@@ -228,7 +229,7 @@ export default function Attendance() {
           <div className="overflow-x-auto">
             <Table 
               columns={columns} 
-              dataSource={attendanceData} 
+              dataSource={data} 
               pagination={{ pageSize: 5 }}
               className="[&_.ant-table-thead_th]:bg-white [&_.ant-table-thead_th]:border-b-2 [&_.ant-table-thead_th]:border-slate-100 [&_.ant-table-tbody_td]:border-b [&_.ant-table-tbody_td]:border-slate-50 [&_.ant-table-tbody_tr:hover_td]:bg-blue-50/30 [&_.ant-pagination]:px-6 [&_.ant-pagination]:pb-4"
             />

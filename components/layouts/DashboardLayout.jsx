@@ -75,6 +75,7 @@ export default function DashboardLayout({ role = "student", children }) {
         return [
           { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, group: 'Overview' },
           { name: 'My Internship', path: '/dashboard/internship', icon: Briefcase, group: 'Internship Details' },
+          { name: 'Roadmap', path: '/dashboard/roadmap', icon: Map, group: 'Internship Details' },
           { name: 'Today\'s Task', path: '/dashboard/task', icon: CheckSquare, group: 'Learning & Tasks' },
           { name: 'Daily Submission', path: '/dashboard/submission', icon: UploadCloud, group: 'Learning & Tasks' },
           { name: 'Weekly Assessments', path: '/dashboard/assessments', icon: ClipboardCheck, group: 'Learning & Tasks' },

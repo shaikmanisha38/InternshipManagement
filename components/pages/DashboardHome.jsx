@@ -2,14 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Progress, Avatar, Tag, Typography, Row, Col, Tooltip, Button, Timeline, Badge, Space, Spin, Alert } from 'antd';
-import { 
+import {
   FireFilled, 
   TrophyOutlined, 
   CheckCircleFilled,
   ClockCircleOutlined,
-  GithubOutlined,
-  BulbOutlined,
-  WarningFilled,
   CheckCircleOutlined
 } from '@ant-design/icons';
 
@@ -64,7 +61,7 @@ export default function DashboardHome() {
 
   if (!data) return null;
 
-  const { user, internship, weeklyAssessment, todaysTask, githubStatus, aiFeedback, recentActivities } = data;
+  const { user, internship, weeklyAssessment, todaysTask, recentActivities } = data;
   const currentWeek = internship ? `Week ${internship.currentWeek}` : 'N/A';
 
   return (
@@ -75,8 +72,8 @@ export default function DashboardHome() {
         <div className="bg-gradient-to-r from-slate-900 to-blue-900 p-6 text-white flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div>
             <Title level={3} className="!text-white !mb-1 !mt-0">Welcome back, {user.name}!</Title>
-            <Text className="text-blue-200 text-sm">
-              {currentDate} <span className="mx-2">•</span> <strong className="text-white">{currentWeek}</strong>
+            <Text className="!text-blue-200 text-sm">
+              {currentDate} <span className="mx-2">•</span> <strong className="!text-white">{currentWeek}</strong>
             </Text>
           </div>
           
@@ -84,8 +81,8 @@ export default function DashboardHome() {
             <div className="flex items-center gap-3">
               <Avatar src={user.profileImage || "https://gw.alipayobjects.com/zos/rmsportal/KDpgvguMpGfqaHPjicRK.svg"} size={48} className="bg-white p-1" />
               <div>
-                <Text className="block text-xs text-blue-200 uppercase tracking-wider font-bold">Internship</Text>
-                <Text className="text-white font-semibold">{internship ? internship.title : 'Not Enrolled'}</Text>
+                <Text className="block text-xs !text-blue-200 uppercase tracking-wider font-bold">Internship</Text>
+                <Text className="!text-white font-semibold">{internship ? internship.title : 'Not Enrolled'}</Text>
               </div>
             </div>
 
@@ -96,20 +93,8 @@ export default function DashboardHome() {
                 <CheckCircleOutlined className="text-xl text-purple-400" />
               </div>
               <div>
-                <Text className="block text-xs text-blue-200 uppercase tracking-wider font-bold">Applied</Text>
-                <Text className="text-white font-bold text-lg leading-tight">1</Text>
-              </div>
-            </div>
-
-            <div className="h-10 w-px bg-white/20 hidden sm:block"></div>
-
-            <div className="flex items-center gap-3">
-              <div className="bg-amber-500/20 p-2 rounded-lg border border-amber-500/30">
-                <TrophyOutlined className="text-xl text-amber-400" />
-              </div>
-              <div>
-                <Text className="block text-xs text-blue-200 uppercase tracking-wider font-bold">Rank</Text>
-                <Text className="text-white font-bold text-lg leading-tight">#{user.rank}</Text>
+                <Text className="block text-xs !text-blue-200 uppercase tracking-wider font-bold">Applied</Text>
+                <Text className="!text-white font-bold text-lg leading-tight">1</Text>
               </div>
             </div>
 
@@ -120,15 +105,15 @@ export default function DashboardHome() {
                 <FireFilled className="text-xl text-red-500 animate-pulse" />
               </div>
               <div>
-                <Text className="block text-xs text-blue-200 uppercase tracking-wider font-bold">Streak</Text>
-                <Text className="text-white font-bold text-lg leading-tight">{user.streak} Days</Text>
+                <Text className="block text-xs !text-blue-200 uppercase tracking-wider font-bold">Streak</Text>
+                <Text className="!text-white font-bold text-lg leading-tight">{user.streak} Days</Text>
               </div>
             </div>
 
             <div className="h-10 w-px bg-white/20 hidden xl:block"></div>
 
             <div>
-              <Text className="block text-xs text-blue-200 uppercase tracking-wider font-bold mb-2">Badges Earned</Text>
+              <Text className="block text-xs !text-blue-200 uppercase tracking-wider font-bold mb-2">Badges Earned</Text>
               <div className="flex gap-2">
                 {user.badges && user.badges.length > 0 ? user.badges.map(badge => (
                   <Tooltip title={badge.name} key={badge.id}>
@@ -136,7 +121,7 @@ export default function DashboardHome() {
                       <span className="text-sm">{badge.icon}</span>
                     </Avatar>
                   </Tooltip>
-                )) : <Text className="text-blue-200 text-xs">No badges yet</Text>}
+                )) : <Text className="!text-blue-200 text-xs">No badges yet</Text>}
               </div>
             </div>
           </div>
@@ -228,7 +213,13 @@ export default function DashboardHome() {
               </div>
               
               <div className="w-full md:w-auto flex-shrink-0">
-                <Button type="primary" size="large" disabled={!todaysTask || todaysTask.status === 'APPROVED'} className="w-full md:w-auto h-12 px-8 rounded-xl font-bold text-base shadow-lg shadow-blue-500/30">
+                <Button 
+                  type="primary" 
+                  size="large" 
+                  disabled={!todaysTask || todaysTask.status === 'APPROVED'} 
+                  className="w-full md:w-auto h-12 px-8 rounded-xl font-bold text-base shadow-lg shadow-blue-500/30"
+                  onClick={() => router.push('/dashboard/task')}
+                >
                   {todaysTask && todaysTask.status === 'APPROVED' ? 'Completed' : 'Start Task'}
                 </Button>
               </div>
@@ -239,75 +230,6 @@ export default function DashboardHome() {
 
         {/* 3. SIDEBAR / SECONDARY COLUMN (Integrations & Logs) */}
         <Col xs={24} lg={8} className="space-y-6">
-          
-          {/* GitHub Status Card */}
-          <Card className="rounded-2xl border-slate-200 shadow-sm"  styles={{ body: { padding: '24px' } }}>
-            <div className="flex items-center gap-2 mb-6">
-              <GithubOutlined className="text-2xl text-slate-700" />
-              <Title level={5} className="!m-0 text-slate-800">GitHub Status</Title>
-            </div>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                <Text className="text-slate-500 font-medium">Repository Connected</Text>
-                <div className="flex items-center gap-2">
-                  <Badge status={githubStatus.isConnected ? "success" : "default"} /> 
-                  <Text className="font-bold text-slate-700">{githubStatus.isConnected ? 'Yes' : 'No'}</Text>
-                </div>
-              </div>
-              <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                <Text className="text-slate-500 font-medium">Latest Commit</Text>
-                <Text className="font-bold text-slate-700">
-                  {githubStatus.lastCommitTime ? new Date(githubStatus.lastCommitTime).toLocaleTimeString() : 'N/A'}
-                </Text>
-              </div>
-              <div className="flex justify-between items-center pt-1">
-                <Text className="text-slate-500 font-medium">Last Submission</Text>
-                {githubStatus.lastSubmissionStatus ? (
-                  <Tag color={githubStatus.lastSubmissionStatus === 'APPROVED' ? 'success' : 'processing'} className="m-0 border-green-200 bg-green-50 text-green-700 rounded-md font-bold px-3 py-1">
-                    {githubStatus.lastSubmissionStatus}
-                  </Tag>
-                ) : (
-                  <Text className="font-bold text-slate-700">None</Text>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          {/* AI Feedback Summary */}
-          <Card className="rounded-2xl border-slate-200 shadow-sm"  styles={{ body: { padding: '24px' } }}>
-            <div className="flex items-center gap-2 mb-5">
-              <BulbOutlined className="text-2xl text-amber-500" />
-              <Title level={5} className="!m-0 text-slate-800">AI Feedback</Title>
-            </div>
-            
-            <div className="bg-slate-50/80 p-4 rounded-xl mb-6 flex items-center justify-between border border-slate-100">
-              <Text className="font-semibold text-slate-600">Average Score</Text>
-              <div className="flex items-center gap-3">
-                <Progress type="dashboard" percent={aiFeedback.averageScore} size={42} strokeColor="#8b5cf6" format={() => ''} />
-                <span className="text-2xl font-black text-violet-600">{aiFeedback.averageScore}%</span>
-              </div>
-            </div>
-
-            <Text className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-4 block">Last Feedback</Text>
-            {aiFeedback.lastFeedback ? (
-              <ul className="space-y-3 m-0 p-0">
-                {aiFeedback.lastFeedback.strengths.map((str, idx) => (
-                  <li key={`str-${idx}`} className="flex items-start gap-3">
-                    <CheckCircleFilled className="text-green-500 text-lg mt-0.5" />
-                    <Text className="text-slate-700 font-medium">{str}</Text>
-                  </li>
-                ))}
-                {aiFeedback.lastFeedback.weaknesses.map((wk, idx) => (
-                  <li key={`wk-${idx}`} className="flex items-start gap-3">
-                    <WarningFilled className="text-amber-500 text-lg mt-0.5" />
-                    <Text className="text-slate-700 font-medium">{wk}</Text>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Text className="text-slate-500">No feedback available yet.</Text>
-            )}
-          </Card>
 
           {/* Recent Activities Timeline */}
           <Card 

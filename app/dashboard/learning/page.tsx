@@ -1,14 +1,11 @@
 "use client";
-import React from 'react';
-import MyInternship from '@/components/pages/MyInternship';
+import DayLearning from '@/components/pages/DayLearning';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 
 export default function Page() {
   return (
     <DashboardLayout role="student">
-      <React.Suspense fallback={<div>Loading...</div>}>
-        <MyInternship />
-      </React.Suspense>
+      <DayLearning />
     </DashboardLayout>
   );
 }
