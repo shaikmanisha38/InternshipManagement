@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 
     const formattedData = attendances.map((att, idx) => {
       // Formatting time helper
-      const formatTime = (dateObj) => {
+      const formatTime = (dateObj: Date | string | null | undefined) => {
         if (!dateObj) return '--:--';
         return new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit' }).format(new Date(dateObj));
       };

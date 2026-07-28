@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+export {};
 const curriculum = require('./curriculum-data.js');
 
 async function main() {

@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Task ID and Repository URL are required' }, { status: 400 });
     }
 
-    let status = 'FAILED';
+    let status: import('@prisma/client').SubmissionStatus = 'FAILED';
     let commitHash = `manual-${Date.now()}`;
     let aiEvaluation = null;
 
@@ -83,13 +83,13 @@ export async function POST(req: Request) {
     const newSubmission = await prisma.taskSubmission.create({
       data: {
         taskId,
-        studentId: userId,
+        userId,
         repositoryUrl,
         branch: branch || 'main',
         commitHash,
         notes,
         status, // 'VERIFIED' or 'FAILED'
-        aiEvaluation
+        ...(aiEvaluation ? { aiEvaluation: { create: aiEvaluation } } : {})
       },
       include: {
         task: true

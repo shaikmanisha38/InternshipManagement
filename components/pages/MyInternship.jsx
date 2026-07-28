@@ -198,11 +198,11 @@ export default function MyInternship() {
                   <ClockCircleOutlined /> Duration: {internship.duration || 'N/A'}
                 </Tag>
                 <Tag className="px-3 py-1.5 bg-white/10 border-white/20 text-white rounded-md flex items-center gap-2 text-sm font-medium backdrop-blur-sm">
-                  <CalendarOutlined /> Started: {new Date(data.startDate).toLocaleDateString()}
+                  <CalendarOutlined /> Started: {new Date(internship.studentProgress?.startDate || internship.createdAt).toLocaleDateString()}
                 </Tag>
-                {data.endDate && (
+                {internship.endDate && (
                   <Tag className="px-3 py-1.5 bg-white/10 border-white/20 text-white rounded-md flex items-center gap-2 text-sm font-medium backdrop-blur-sm">
-                    <FlagOutlined /> Ends: {new Date(data.endDate).toLocaleDateString()}
+                    <FlagOutlined /> Ends: {new Date(internship.endDate).toLocaleDateString()}
                   </Tag>
                 )}
               </div>
@@ -212,16 +212,16 @@ export default function MyInternship() {
                   <div>
                     <Text className="text-blue-200 uppercase text-xs font-bold tracking-wider block mb-1">Live Progress</Text>
                     <Text className="text-white font-medium">
-                      Week {data.currentWeek} <span className="mx-2 opacity-50">|</span> Day {data.currentDay}
+                      Week {internship.studentProgress?.currentWeek || 1} <span className="mx-2 opacity-50">|</span> Day {internship.studentProgress?.currentDay || 1}
                     </Text>
                   </div>
                   <div className="text-right">
-                    <Text className="text-white font-bold text-xl">{Math.round(data.progress)}%</Text>
+                    <Text className="text-white font-bold text-xl">{Math.round(internship.studentProgress?.progress || 0)}%</Text>
                     <Text className="text-blue-200 uppercase text-xs font-bold tracking-wider block">Completed</Text>
                   </div>
                 </div>
                 <Progress
-                  percent={Math.round(data.progress)}
+                  percent={Math.round(internship.studentProgress?.progress || 0)}
                   showInfo={false}
                   strokeColor={{ '0%': '#60a5fa', '100%': '#34d399' }}
                   railColor="rgba(255,255,255,0.2)"
