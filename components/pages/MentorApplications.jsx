@@ -1,3 +1,5 @@
++
+
 import React, { useState, useEffect } from 'react';
 import { Typography, Card, Table, Tag, Button, Space, message, Popconfirm, Spin, Tabs, Badge } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
@@ -47,7 +49,7 @@ export default function MentorApplications() {
         },
         body: JSON.stringify({ status })
       });
-      
+
       if (res.ok) {
         message.success(`Application ${status.toLowerCase()} successfully!`);
         fetchApplications();
@@ -103,8 +105,8 @@ export default function MentorApplications() {
             okText="Yes, Approve"
             cancelText="Cancel"
           >
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               className="bg-green-500 hover:bg-green-600 border-none"
               icon={<CheckCircleOutlined />}
               loading={actionLoading === record.id}
@@ -120,8 +122,8 @@ export default function MentorApplications() {
             cancelText="Cancel"
             okButtonProps={{ danger: true }}
           >
-            <Button 
-              danger 
+            <Button
+              danger
               icon={<CloseCircleOutlined />}
               loading={actionLoading === record.id}
             >
@@ -181,19 +183,19 @@ export default function MentorApplications() {
       </div>
 
       <Card className="rounded-xl shadow-sm border-slate-200 overflow-hidden" styles={{ body: { padding: 0 } }}>
-        <Tabs 
-          defaultActiveKey="1" 
-          className="custom-tabs" 
+        <Tabs
+          defaultActiveKey="1"
+          className="custom-tabs"
           items={[
             {
               key: '1',
               label: <Badge count={pendingApps.length} offset={[10, 0]}>Pending Approvals</Badge>,
               children: (
                 <div className="p-4">
-                  <Table 
-                    columns={columns} 
-                    dataSource={pendingApps} 
-                    rowKey="id" 
+                  <Table
+                    columns={columns}
+                    dataSource={pendingApps}
+                    rowKey="id"
                     loading={loading}
                     pagination={{ pageSize: 10 }}
                     locale={{ emptyText: 'No pending applications found.' }}
@@ -206,10 +208,10 @@ export default function MentorApplications() {
               label: 'Enrolled Students',
               children: (
                 <div className="p-4">
-                  <Table 
-                    columns={enrolledColumns} 
-                    dataSource={enrolledApps} 
-                    rowKey="id" 
+                  <Table
+                    columns={enrolledColumns}
+                    dataSource={enrolledApps}
+                    rowKey="id"
                     loading={loading}
                     pagination={{ pageSize: 10 }}
                     locale={{ emptyText: 'No enrolled students found.' }}
@@ -217,10 +219,11 @@ export default function MentorApplications() {
                 </div>
               )
             }
-          ]} 
+          ]}
         />
       </Card>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .custom-tabs .ant-tabs-nav::before { border-bottom: 1px solid #e2e8f0; }
         .custom-tabs .ant-tabs-tab { color: #64748b; font-weight: 500; }
         .custom-tabs .ant-tabs-tab-active .ant-tabs-tab-btn { color: #0F172A !important; font-weight: 600; }

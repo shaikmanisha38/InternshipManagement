@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
+import { syncStudentProgress } from '@/lib/syncProgress';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
@@ -15,6 +16,8 @@ export async function GET(req: Request) {
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
     const userId = payload.userId as string;
+
+    await syncStudentProgress(userId);
 
     const studentInternship = await prisma.studentInternship.findFirst({
       where: {

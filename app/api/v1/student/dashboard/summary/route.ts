@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
+import { syncStudentProgress } from '@/lib/syncProgress';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
@@ -23,6 +24,8 @@ export async function GET(req: Request) {
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
     const userId = payload.userId as string;
+
+    await syncStudentProgress(userId);
 
     // 2. Fetch User
     const user = await prisma.user.findUnique({
@@ -104,9 +107,9 @@ export async function GET(req: Request) {
         title: studentInternship.internship.title,
         currentWeek: studentInternship.currentWeek,
         progress: {
-          percent: studentInternship.progress,
-          completed: Math.floor((studentInternship.progress / 100) * 10), // Mocked total tasks
-          total: 10
+          percent: Math.round((submissions.length / 72) * 100) || 0,
+          completed: submissions.length,
+          total: 72
         },
         status: studentInternship.status
       };

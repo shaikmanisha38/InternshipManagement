@@ -132,7 +132,7 @@ export default function DashboardLayout({ role = "student", children }) {
               return (
                 <React.Fragment key={item.path}>
                   {showGroupHeader && (
-                    <div className="pt-4 pb-2 px-4 text-xs font-bold text-textMuted uppercase tracking-wider">
+                    <div className="pt-4 pb-2 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
                       {currentGroup}
                     </div>
                   )}
@@ -140,8 +140,8 @@ export default function DashboardLayout({ role = "student", children }) {
                     href={item.path}
                     className={
                       `flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-sm ${pathname === item.path
-                        ? 'bg-primary/20 text-primary border border-primary/30 shadow-lg shadow-primary/10'
-                        : 'text-textMuted hover:text-white hover:bg-white/5'
+                        ? 'bg-primary/20 text-blue-400 font-bold border border-primary/30 shadow-lg shadow-primary/10'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
                       }`
                     }
                   >
