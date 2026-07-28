@@ -2,10 +2,14 @@
 import TodaysTask from '@/components/pages/TodaysTask';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 
+import { Suspense } from 'react';
+
 export default function Page() {
   return (
     <DashboardLayout role="student">
-      <TodaysTask />
+      <Suspense fallback={<div>Loading task...</div>}>
+        <TodaysTask />
+      </Suspense>
     </DashboardLayout>
   );
 }
