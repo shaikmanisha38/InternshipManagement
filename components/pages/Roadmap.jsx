@@ -70,7 +70,11 @@ export default function Roadmap({ embedded = false }) {
       // By default if it's not completed or unlocked, consider it locked.
       message.warning('This day is currently locked. Complete previous days to unlock.');
     } else {
-      router.push(`/dashboard/learning?day=${dayNumber}&week=${weekNumber}`);
+      if (dayNumber === 7) {
+        router.push('/dashboard/assessment');
+      } else {
+        router.push(`/dashboard/learning?day=${dayNumber}&week=${weekNumber}`);
+      }
     }
   };
 

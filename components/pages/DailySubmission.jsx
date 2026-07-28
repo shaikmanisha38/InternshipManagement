@@ -110,14 +110,27 @@ export default function DailySubmission() {
   };
 
   const renderTimelineItems = () => {
-    return history.map((sub, index) => {
+    const uniqueHistory = [];
+    const seenVerifiedTasks = new Set();
+    
+    for (const sub of history) {
+      if (sub.status === 'VERIFIED') {
+        if (!seenVerifiedTasks.has(sub.taskId)) {
+          seenVerifiedTasks.add(sub.taskId);
+          uniqueHistory.push(sub);
+        }
+      } else {
+        uniqueHistory.push(sub);
+      }
+    }
+
+    return uniqueHistory.map((sub, index) => {
       const isAccepted = sub.status === 'VERIFIED';
       const isPending = sub.status === 'PENDING';
       const isFailed = sub.status === 'FAILED';
       
-      // Calculate Day format for icon (D1, D2 etc). Just arbitrary based on history length if we don't have the day from task
-      // In real scenario we get day from sub.task.roadmapDay.dayNumber
-      const dayNum = sub.task?.roadmapDay?.dayNumber || (history.length - index);
+      // Use the actual day number from the task, fallback to workspace.currentDay if somehow missing
+      const dayNum = sub.task?.roadmapDay?.dayNumber || workspace?.currentDay || '?';
       const submittedDate = new Date(sub.submittedAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
       return {
@@ -157,20 +170,12 @@ export default function DailySubmission() {
               )}
             </Space>
             
-            {(sub.aiEvaluation?.feedback || sub.notes) && (
+            {sub.notes && (
               <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg flex flex-col gap-2">
-                {sub.aiEvaluation?.feedback && (
-                  <Text className="text-slate-600 font-medium text-sm">
-                    <Text className="font-bold text-slate-900">AI Feedback: </Text>
-                    {sub.aiEvaluation.feedback}
-                  </Text>
-                )}
-                {sub.notes && (
-                  <Text className="text-slate-600 font-medium text-sm">
-                    <Text className="font-bold text-slate-900">Your Notes: </Text>
-                    {sub.notes}
-                  </Text>
-                )}
+                <Text className="text-slate-600 font-medium text-sm">
+                  <Text className="font-bold text-slate-900">Your Notes: </Text>
+                  {sub.notes}
+                </Text>
               </div>
             )}
           </div>
@@ -216,7 +221,20 @@ export default function DailySubmission() {
           <Card className="rounded-xl border border-slate-200 shadow-sm bg-white" title={<Title level={4} className="!text-slate-900 !m-0" styles={{ body: { padding: '32px' } }}>Submit Day {workspace?.currentDay || 1} Progress</Title>}
             headStyle={{ borderBottom: '1px solid #f1f5f9', padding: '24px 32px 16px 32px', minHeight: 'auto' }}
           >
-            {!canSubmit ? (
+            {history.some(sub => sub.status === 'VERIFIED') ? (
+              <div className="py-8">
+                <Result
+                  status="success"
+                  title="Task Verified!"
+                  subTitle="You have successfully completed and verified today's task. The next day's task will unlock tomorrow!"
+                  extra={
+                    <Button type="primary" href="/dashboard" className="bg-indigo-600">
+                      Return to Dashboard
+                    </Button>
+                  }
+                />
+              </div>
+            ) : !canSubmit ? (
               <div className="py-8">
                 <Result
                   status="warning"

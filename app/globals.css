@@ -224,3 +224,21 @@
     border-right-color: var(--border);
   }
 }
+
+/* Ensure Ant Design Navigations are visible on light cards */
+.ant-tabs-tab-btn,
+.ant-menu-item,
+.ant-menu-submenu-title,
+.ant-breadcrumb-link {
+  color: #1e293b !important; /* slate-800 */
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn,
+.ant-menu-item-selected,
+.ant-menu-item-active {
+  color: var(--color-primary) !important;
+}
+
+.ant-breadcrumb-separator {
+  color: #94a3b8 !important; /* slate-400 */
+}

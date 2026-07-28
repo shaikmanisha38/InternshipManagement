@@ -23,9 +23,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Task ID and Repository URL are required' }, { status: 400 });
     }
 
+    // Check if the student has already verified a different task today
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const verifiedSubmissionsToday = await prisma.taskSubmission.findMany({
+      where: {
+        userId,
+        status: 'VERIFIED',
+        submittedAt: {
+          gte: startOfToday
+        }
+      }
+    });
+
+    if (verifiedSubmissionsToday.length > 0) {
+      const alreadyVerifiedThisTaskToday = verifiedSubmissionsToday.some(sub => sub.taskId === taskId);
+      if (!alreadyVerifiedThisTaskToday) {
+        return NextResponse.json({ message: 'You have already completed a task today! Please come back tomorrow to submit the next day\'s task.' }, { status: 400 });
+      }
+    }
+
     let status: import('@prisma/client').SubmissionStatus = 'FAILED';
     let commitHash = `manual-${Date.now()}`;
-    let aiEvaluation = null;
+
 
     // Extract owner and repo from Github URL
     // Expected format: https://github.com/username/repo
@@ -56,29 +77,19 @@ export async function POST(req: Request) {
           } else {
             status = 'FAILED';
           }
-        } else if (githubRes.status === 403 || githubRes.status === 404) {
-          // If we hit rate limits (403) or repo is private (404), we mock verification for demonstration purposes.
-          console.warn(`GitHub API returned ${githubRes.status} for ${owner}/${repo}. Mocking VERIFIED status.`);
-          status = 'VERIFIED';
-          commitHash = `mock-verified-${Date.now()}`;
+        } else {
+          console.warn(`GitHub API returned ${githubRes.status} for ${owner}/${repo}. Status: FAILED.`);
+          status = 'FAILED';
         }
       } catch (err) {
         console.error('Error calling Github API:', err);
-        // Fallback mock for demo
-        status = 'VERIFIED';
+        status = 'FAILED';
       }
     } else {
       // If it's not a valid GitHub URL, we fail it automatically
       status = 'FAILED';
     }
 
-    // Mock AI Evaluation if verified
-    if (status === 'VERIFIED') {
-      aiEvaluation = {
-        score: Math.floor(Math.random() * 20) + 80, // 80-99
-        feedback: "Code meets the basic requirements and follows best practices. Good use of standard libraries and clear logic structure. Consider adding more comprehensive error handling for edge cases."
-      };
-    }
 
     const newSubmission = await prisma.taskSubmission.create({
       data: {
@@ -88,13 +99,19 @@ export async function POST(req: Request) {
         branch: branch || 'main',
         commitHash,
         notes,
-        status, // 'VERIFIED' or 'FAILED'
-        ...(aiEvaluation ? { aiEvaluation: { create: aiEvaluation } } : {})
+        status // 'VERIFIED' or 'FAILED'
       },
       include: {
-        task: true
+        task: {
+          include: {
+            roadmapDay: true
+          }
+        }
       }
     });
+
+    // Day advancement logic is now handled by a lazy sync in the dashboard APIs 
+    // to ensure the next day only unlocks on the NEXT calendar day.
 
     return NextResponse.json(newSubmission, { status: 201 });
   } catch (error: any) {

@@ -37,7 +37,7 @@ export default function Navbar() {
               <Link
                 key={link.name}
                 href={link.path}
-                className={`text-sm font-medium transition-colors hover:text-white ${pathname === link.path ? 'text-white' : 'text-textMuted'}`}
+                className={`text-sm font-medium transition-colors hover:text-white ${pathname === link.path ? 'text-white' : 'text-slate-300'}`}
               >
                 {link.name}
               </Link>
@@ -49,7 +49,7 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/login')}
-              className="text-sm font-bold text-textMuted hover:text-white transition-colors"
+              className="text-sm font-bold text-slate-300 hover:text-white transition-colors"
             >
               Login
             </button>

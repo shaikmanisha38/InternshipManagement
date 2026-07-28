@@ -25,7 +25,7 @@ export default function TodaysTask() {
   const [taskData, setTaskData] = useState(null);
   const [submission, setSubmission] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [isAiModalVisible, setIsAiModalVisible] = useState(false);
+
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -63,6 +63,13 @@ export default function TodaysTask() {
         throw new Error('No task available for today.');
       }
       const data = tasksArray[0];
+
+      if (data.currentDay === 7) {
+        // It's assessment day! Redirect to assessment.
+        router.replace('/dashboard/assessment');
+        return;
+      }
+
       setTaskData(data);
 
       // 2. Fetch latest submission for this task
@@ -97,13 +104,6 @@ export default function TodaysTask() {
 
   const handleCheck = (key) => {
     setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-
-
-  const handleOpenVSCode = () => {
-    // Open VS Code generically since task specific repository URL is not present
-    window.location.href = 'vscode://';
   };
 
 
@@ -145,30 +145,12 @@ export default function TodaysTask() {
           </ul>
         </div>
       ),
-    },
-    {
-      key: '2',
-      label: 'Starter Code',
-      children: (
-        <div className="bg-slate-900 rounded-xl p-4 overflow-hidden">
-          <pre className="text-slate-300 font-mono text-sm m-0">
-            <code>
-{`// Starter template
-function solveTask() {
-  // Your code here
-}
-
-module.exports = solveTask;`}
-            </code>
-          </pre>
-        </div>
-      ),
-    },
+    }
   ];
 
+
   const hasSubmission = !!submission;
-  const isApproved = submission?.status === 'APPROVED';
-  const hasFeedback = !!submission?.aiEvaluation;
+  const isApproved = submission?.status === 'APPROVED' || submission?.status === 'VERIFIED';
 
   return (
     <div className="p-4 md:p-8 space-y-8 bg-slate-50 min-h-full">
@@ -236,7 +218,7 @@ module.exports = solveTask;`}
           {/* Action Button Bar */}
           <Card className="rounded-2xl border-slate-200 shadow-sm bg-white"  styles={{ body: { padding: '24px' } }}>
             <div className="flex flex-col gap-3">
-              {isApproved && (
+              {hasSubmission && isApproved && (
                 <Tag color="success" icon={<CheckCircleOutlined />} className="w-full text-center py-2 text-sm font-bold m-0 mb-3 rounded-lg">
                   Task Approved
                 </Tag>
@@ -246,11 +228,30 @@ module.exports = solveTask;`}
                   Task Submitted (Pending)
                 </Tag>
               )}
+              <div className="mt-2 mb-2">
+                <Text className="text-slate-900 font-bold block mb-2">Starter Code</Text>
+                <div className="bg-slate-900 rounded-xl p-3 overflow-hidden">
+                  <pre className="text-slate-300 font-mono text-xs m-0 overflow-x-auto">
+                    <code>
+{`// Starter template
+function solveTask() {
+  // Your code here
+}
+
+module.exports = solveTask;`}
+                    </code>
+                  </pre>
+                </div>
+              </div>
 
               <Button 
                 icon={<CodeOutlined />} 
                 className="w-full h-11 rounded-xl font-bold border-blue-200 text-blue-800 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 mt-2"
-                onClick={handleOpenVSCode}
+                onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = 'vscode://';
+                  a.click();
+                }}
               >
                 Open VS Code
               </Button>
@@ -313,41 +314,7 @@ module.exports = solveTask;`}
         </Col>
       </Row>
 
-      <Modal
-        title={
-          <div className="flex items-center gap-2 text-violet-700">
-            <RobotOutlined className="text-2xl" />
-            <span className="text-lg font-bold">AI Evaluation Result</span>
-          </div>
-        }
-        visible={isAiModalVisible}
-        onCancel={() => setIsAiModalVisible(false)}
-        footer={[
-          <Button key="close" type="primary" className="bg-violet-600 hover:bg-violet-700" onClick={() => setIsAiModalVisible(false)}>
-            Close
-          </Button>
-        ]}
-      >
-        {submission?.aiEvaluation ? (
-          <div className="space-y-4 py-4">
-            <div className="flex justify-between items-center bg-violet-50 p-4 rounded-xl border border-violet-200">
-              <Text className="font-bold text-violet-900">Overall Score</Text>
-              <Text className="font-black text-2xl text-violet-700">{submission.aiEvaluation.score}/100</Text>
-            </div>
-            <div>
-              <Text className="font-bold text-slate-800 block mb-1">Feedback</Text>
-              <Paragraph className="text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                {submission.aiEvaluation.feedback}
-              </Paragraph>
-            </div>
-          </div>
-        ) : (
-          <div className="p-8 text-center">
-            <Spin />
-            <Text className="block mt-4 text-slate-500">AI is still generating feedback...</Text>
-          </div>
-        )}
-      </Modal>
+
     </div>
   );
 }

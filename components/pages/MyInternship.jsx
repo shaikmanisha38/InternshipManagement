@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Card, Progress, Avatar, Tag, Typography, Row, Col, Divider, Spin, Alert, Tabs, Button, message, Badge } from 'antd';
+import { Card, Progress, Avatar, Tag, Typography, Row, Col, Divider, Spin, Alert, Tabs, Button, message, Badge, Modal } from 'antd';
 import {
   CalendarOutlined,
   ClockCircleOutlined,
@@ -27,6 +27,9 @@ export default function MyInternship() {
   
   // State for tracking which courses the user has clicked "Enroll" on locally before refresh
   const [enrolledCourses, setEnrolledCourses] = useState({});
+
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -188,20 +191,20 @@ export default function MyInternship() {
             <div className="relative z-10">
               <div className="mb-6 max-w-4xl">
                 <Title level={2} className="!text-white !mb-3">{internship.title}</Title>
-                <Paragraph className="text-blue-100 text-base leading-relaxed max-w-3xl">
+                <Paragraph className="!text-blue-100 text-base leading-relaxed max-w-3xl">
                   {internship.description}
                 </Paragraph>
               </div>
 
               <div className="flex flex-wrap gap-4 mb-8">
-                <Tag className="px-3 py-1.5 bg-white/10 border-white/20 text-white rounded-md flex items-center gap-2 text-sm font-medium backdrop-blur-sm">
+                <Tag className="px-3 py-1.5 bg-white/10 border-white/20 !text-white rounded-md flex items-center gap-2 text-sm font-medium backdrop-blur-sm">
                   <ClockCircleOutlined /> Duration: {internship.duration || 'N/A'}
                 </Tag>
-                <Tag className="px-3 py-1.5 bg-white/10 border-white/20 text-white rounded-md flex items-center gap-2 text-sm font-medium backdrop-blur-sm">
+                <Tag className="px-3 py-1.5 bg-white/10 border-white/20 !text-white rounded-md flex items-center gap-2 text-sm font-medium backdrop-blur-sm">
                   <CalendarOutlined /> Started: {new Date(internship.studentProgress?.startDate || internship.createdAt).toLocaleDateString()}
                 </Tag>
                 {internship.endDate && (
-                  <Tag className="px-3 py-1.5 bg-white/10 border-white/20 text-white rounded-md flex items-center gap-2 text-sm font-medium backdrop-blur-sm">
+                  <Tag className="px-3 py-1.5 bg-white/10 border-white/20 !text-white rounded-md flex items-center gap-2 text-sm font-medium backdrop-blur-sm">
                     <FlagOutlined /> Ends: {new Date(internship.endDate).toLocaleDateString()}
                   </Tag>
                 )}
@@ -210,14 +213,14 @@ export default function MyInternship() {
               <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/20 max-w-2xl shadow-inner">
                 <div className="flex justify-between items-end mb-2">
                   <div>
-                    <Text className="text-blue-200 uppercase text-xs font-bold tracking-wider block mb-1">Live Progress</Text>
-                    <Text className="text-white font-medium">
+                    <Text className="!text-blue-200 uppercase text-xs font-bold tracking-wider block mb-1">Live Progress</Text>
+                    <Text className="!text-white font-medium">
                       Week {internship.studentProgress?.currentWeek || 1} <span className="mx-2 opacity-50">|</span> Day {internship.studentProgress?.currentDay || 1}
                     </Text>
                   </div>
                   <div className="text-right">
-                    <Text className="text-white font-bold text-xl">{Math.round(internship.studentProgress?.progress || 0)}%</Text>
-                    <Text className="text-blue-200 uppercase text-xs font-bold tracking-wider block">Completed</Text>
+                    <Text className="!text-white font-bold text-xl">{Math.round(internship.studentProgress?.progress || 0)}%</Text>
+                    <Text className="!text-blue-200 uppercase text-xs font-bold tracking-wider block">Completed</Text>
                   </div>
                 </div>
                 <Progress
@@ -374,8 +377,8 @@ export default function MyInternship() {
   );
 
   const myInternshipsItems = [
-    { key: 'in-progress', label: 'In Progress', children: inProgressContent },
-    { key: 'completed', label: 'Completed', children: completedContent },
+    { key: 'in-progress', label: <span className="text-slate-800">In Progress</span>, children: inProgressContent },
+    { key: 'completed', label: <span className="text-slate-800">Completed</span>, children: completedContent },
   ];
 
   const handleEnroll = async (id) => {
@@ -419,7 +422,13 @@ export default function MyInternship() {
             
             return (
               <Col xs={24} md={12} lg={8} key={course.id}>
-                <Card className="rounded-2xl border-slate-200 shadow-sm h-full flex flex-col hover:shadow-md transition-shadow">
+                <Card 
+                  className="rounded-2xl border-slate-200 shadow-sm h-full flex flex-col hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => {
+                    setSelectedCourse(course);
+                    setIsModalVisible(true);
+                  }}
+                >
                   <div className="flex-grow">
                     <Title level={4} className="!mb-2 !mt-0">{course.title}</Title>
                     <Text className="text-slate-500 block mb-3"><ClockCircleOutlined /> {course.duration || 'N/A'}</Text>
@@ -458,7 +467,7 @@ export default function MyInternship() {
                       <Button 
                         type="primary" 
                         className="w-full h-10 rounded-xl font-semibold shadow-sm" 
-                        onClick={() => handleEnroll(course.id)}
+                        onClick={(e) => { e.stopPropagation(); handleEnroll(course.id); }}
                       >
                         Apply Now
                       </Button>
@@ -474,14 +483,56 @@ export default function MyInternship() {
   );
 
   const mainTabsItems = [
-    { key: 'my-internships', label: 'My Internships', children: <Tabs defaultActiveKey="in-progress" items={myInternshipsItems} className="mt-2" /> },
-    { key: 'wishlist', label: 'Wishlist', children: <div className="py-16 text-center text-slate-500 text-lg">Your wishlist is empty.</div> },
-    { key: 'all-internships', label: 'All Internships', children: allInternshipsContent },
+    { key: 'my-internships', label: <span className="text-slate-800">My Internships</span>, children: <Tabs defaultActiveKey="in-progress" items={myInternshipsItems} className="mt-2 custom-tabs-nested" /> },
+    { key: 'wishlist', label: <span className="text-slate-800">Wishlist</span>, children: <div className="py-16 text-center text-slate-500 text-lg">Your wishlist is empty.</div> },
+    { key: 'all-internships', label: <span className="text-slate-800">All Internships</span>, children: allInternshipsContent },
   ];
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-full">
       <Tabs defaultActiveKey="my-internships" items={mainTabsItems} size="large" />
+
+      <Modal
+        title={selectedCourse?.title}
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        {selectedCourse && (
+          <div className="space-y-4 pt-4">
+            <div>
+              <Text className="font-semibold block mb-1">Duration</Text>
+              <Text className="text-slate-600"><ClockCircleOutlined /> {selectedCourse.duration || '12 Weeks'}</Text>
+            </div>
+            <div>
+              <Text className="font-semibold block mb-1">What you'll learn</Text>
+              <Paragraph className="text-slate-600">
+                {selectedCourse.description || selectedCourse.companyName || 'This internship covers all the necessary skills and technologies to make you proficient in this domain.'}
+              </Paragraph>
+              <div className="mt-2">
+                <Text className="font-semibold block mb-2">Technologies</Text>
+                <div className="flex flex-wrap gap-2">
+                  {(selectedCourse.techStack || []).map(t => (
+                    <Tag key={t} color="blue" className="rounded-md m-0">{t}</Tag>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+               <Button onClick={() => setIsModalVisible(false)}>
+                Cancel
+              </Button>
+              <Button type="primary" onClick={() => {
+                setIsModalVisible(false);
+                handleEnroll(selectedCourse.id);
+              }}>
+                Apply for this Internship
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

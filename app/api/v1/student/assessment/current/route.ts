@@ -60,18 +60,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ status: 'locked', message: 'No assessment assigned for this week yet.' });
     }
 
-    // Check if the student has reached the required day to unlock the assessment (e.g. Day 7)
-    // For this implementation, if currentDay < 7, we lock it. 
+    // Check if the student has reached Day 7
     if (studentInternship.currentDay < 7) {
       return NextResponse.json({ 
         status: 'locked', 
-        message: 'Assessment is locked until you reach Day 7 of the current week.',
+        message: `Assessment is locked until you complete Day 6 (currently on Day ${studentInternship.currentDay}).`,
         assessment: {
           title: assessment.title,
-          quizQuestions: assessment.questions.filter(q => q.type === 'MCQ').length,
-          codingProblems: assessment.questions.filter(q => q.type === 'CODING').length,
+          quizQuestions: assessment.questions.filter((q: any) => q.type === 'MCQ').length,
+          codingProblems: assessment.questions.filter((q: any) => q.type === 'CODING').length,
           passingMarks: assessment.passingScore,
-          totalMarks: assessment.questions.reduce((acc, q) => acc + q.points, 0)
+          totalMarks: assessment.questions.reduce((acc: any, q: any) => acc + q.points, 0)
         }
       });
     }

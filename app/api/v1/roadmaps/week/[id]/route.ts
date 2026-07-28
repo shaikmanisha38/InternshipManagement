@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
+import { syncStudentProgress } from '@/lib/syncProgress';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 
@@ -15,6 +16,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
     const userId = payload.userId as string;
+
+    await syncStudentProgress(userId);
 
     const url = new URL(req.url);
     const weekNumberStr = url.searchParams.get('weekNumber');
@@ -64,10 +67,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const currentWeek = studentInternship.currentWeek;
     const currentDay = studentInternship.currentDay;
 
+    // Fetch all verified submissions for this user to accurately determine completion
+    const verifiedSubmissions = await prisma.taskSubmission.findMany({
+      where: { userId: userId, status: 'VERIFIED' },
+      select: { taskId: true }
+    });
+    const verifiedTaskIds = new Set(verifiedSubmissions.map(s => s.taskId));
+
     const daysWithStatus = roadmap.roadmapDays.map(day => {
       let status = 'locked';
-      if (weekNumber < currentWeek) {
+      
+      // Determine if ALL tasks for this day are verified
+      const hasTasks = day.tasks && day.tasks.length > 0;
+      const allTasksCompleted = hasTasks && day.tasks.every((t: any) => verifiedTaskIds.has(t.id));
+
+      if (allTasksCompleted) {
         status = 'completed';
+      } else if (weekNumber < currentWeek) {
+        status = 'completed'; // Fallback if no tasks existed but week passed
       } else if (weekNumber === currentWeek) {
         if (day.dayNumber < currentDay) {
           status = 'completed';
@@ -81,6 +98,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         status
       };
     });
+
+    // Manually inject Day 7 for Assessment
+    let day7Status = 'locked';
+    if (weekNumber < currentWeek) {
+      day7Status = 'completed';
+    } else if (weekNumber === currentWeek) {
+      if (currentDay > 7) day7Status = 'completed';
+      else if (currentDay === 7) day7Status = 'unlocked';
+    }
+
+    daysWithStatus.push({
+      id: `assessment-w${weekNumber}`,
+      dayNumber: 7,
+      title: 'Weekly Assessment',
+      topicsCovered: ['Comprehensive Review'],
+      tasks: [],
+      status: day7Status
+    } as any);
 
     return NextResponse.json({
       week: {

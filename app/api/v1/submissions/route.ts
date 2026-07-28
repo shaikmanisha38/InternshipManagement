@@ -114,24 +114,7 @@ export async function POST(req: Request) {
     });
 
     let finalSubmission = submission;
-    if (finalStatus === 'VERIFIED') {
-      // Create AI Evaluation synchronously for instant feedback in the UI
-      try {
 
-        const evaluation = await prisma.aiEvaluation.create({
-          data: {
-            submissionId: submission.id,
-            score: 95,
-            feedback: "Excellent architecture. API routes are structured perfectly according to REST standards.",
-            strengths: ["Clean code", "Good error handling"],
-            weaknesses: []
-          }
-        });
-        (finalSubmission as any).aiEvaluation = evaluation;
-      } catch (e) {
-        console.error("Failed to mock AI evaluation:", e);
-      }
-    }
 
     return NextResponse.json(finalSubmission);
   } catch (error: any) {

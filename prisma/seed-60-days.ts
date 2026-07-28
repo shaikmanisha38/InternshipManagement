@@ -1,7 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
-export {};
-const curriculum = require('./curriculum-data.js');
+import curriculum from './curriculum-data.js';
 
 async function main() {
   console.log('Seeding detailed 60-day roadmap (12 weeks x 5 days)...');
@@ -40,7 +39,7 @@ async function main() {
           weekNumber: weekData.weekNumber,
           title: weekData.title,
           description: weekData.description,
-          totalDays: 5
+          totalDays: 6
         }
       });
 

@@ -109,9 +109,27 @@ export default function Assessment() {
                   type="primary"
                   size="large"
                   icon={<PlayCircleOutlined />}
+                  onClick={async () => {
+                    message.loading({ content: 'Submitting assessment...', key: 'submit' });
+                    try {
+                      const token = Cookies.get('token') || localStorage.getItem('token');
+                      const res = await fetch('/api/v1/student/assessment/submit', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      if (res.ok) {
+                        message.success({ content: 'Assessment completed successfully!', key: 'submit' });
+                        window.location.reload();
+                      } else {
+                        throw new Error('Failed to submit assessment');
+                      }
+                    } catch (err) {
+                      message.error({ content: err.message, key: 'submit' });
+                    }
+                  }}
                   className="bg-blue-600 hover:bg-blue-700 border-blue-600 shadow-md shadow-blue-600/20 rounded-xl h-12 px-8 font-bold text-white w-full md:w-auto"
                 >
-                  Start Assessment
+                  Start & Submit Assessment
                 </Button>
               ) : status === 'locked' ? (
                 <Button
